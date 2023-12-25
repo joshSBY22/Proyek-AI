@@ -8,10 +8,16 @@ import viteLogo from '/vite.svg'
 function App() {
 
   const [board, setBoard] = useState([]);
-  const [boardSize, setBoardSize] = useState(4);
+  const [boardSize, setBoardSize] = useState(3);
   const [turn, setTurn] = useState("player");
   const [selectedCell, setSelectedCell] = useState("");
   const [selectedTargetCell, setSelectedTargetCell] = useState("");
+
+  const [posCheck, setPoscheck] = useState("top");
+  const [checkY, setY] = useState([0, 1, 0, -1]);
+  const [checkX, setX] = useState([1, 0, -1, 0]);
+  const [playerWin, setPlayerwin] = useState(false);
+  const [enemyWin, setEnemywin] = useState(false);
 
   const [selectedStone, setSelectedStone] = useState("flatstone");
   const [capstoneAvailable, setCapstoneAvailable] = useState(0);
@@ -44,9 +50,15 @@ function App() {
       newBoard.push(row);
     }
     setBoard(newBoard);
-
+    
     //initialize stone
-    if (size == 4) {
+    if (size == 3) {
+      setStoneAvailable(10);
+      setCapstoneAvailable(0);
+
+      setEnemyStoneAvailable(10);
+      setEnemyCapstoneAvailable(0);
+    } else if (size == 4) {
       setStoneAvailable(15);
       setCapstoneAvailable(0);
 
@@ -393,6 +405,7 @@ function App() {
             // console.log("masuk");
             putNewStone(selectedCell.col, selectedCell.row, selectedStone);
             setStoneAvailable(stoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+            checkGameTop();
             nextTurn();
           } else {
             alert(selectedStone + " tidak cukup");
@@ -402,6 +415,7 @@ function App() {
           if (capstoneAvailable >= 1) {
             putNewStone(selectedCell.col, selectedCell.row, selectedStone);
             setCapstoneAvailable(capstoneAvailable - 1);
+            checkGameTop();
             nextTurn();
           } else {
             alert(selectedStone + " tidak cukup");
@@ -416,9 +430,11 @@ function App() {
       if (isStackControlled(selectedCell.col, selectedCell.row, turn) && isMoveStackValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {
         if (board[selectedCell.row][selectedCell.col].stack.length == 1 && isMoveSingleValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {//moving stack with single piece only
           moveSinglePiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row);
+          checkGameTop();
           nextTurn();
         } else if (board[selectedCell.row][selectedCell.col].stack.length > 1) {//move stack with multiple piece
           moveStackOfPiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row);
+          checkGameTop();
           nextTurn();
         }
         resetSelected();
@@ -435,6 +451,7 @@ function App() {
           if (enemyStoneAvailable >= 1) {
             putNewStone(selectedCell.col, selectedCell.row, enemySelectedStone);
             setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+            checkGameTop();
             nextTurn();
           } else {
             alert(enemySelectedStone + " tidak cukup");
@@ -444,6 +461,7 @@ function App() {
           if (enemyCapstoneAvailable >= 1) {
             putNewStone(selectedCell.col, selectedCell.row, enemySelectedStone);
             setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);
+            checkGameTop();
             nextTurn();
           } else {
             alert(enemySelectedStone + " tidak cukup");
@@ -458,9 +476,11 @@ function App() {
       if (isStackControlled(selectedCell.col, selectedCell.row, turn) && isMoveStackValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {
         if (board[selectedCell.row][selectedCell.col].stack.length == 1 && isMoveSingleValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {//moving stack with single piece only
           moveSinglePiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row);
+          checkGameTop();
           nextTurn();
         } else if (board[selectedCell.row][selectedCell.col].stack.length > 1) {//move stack with multiple piece
           moveStackOfPiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row);
+          checkGameTop();
           nextTurn();
         }
         resetSelected();
@@ -470,8 +490,149 @@ function App() {
     }
   }
 
+  function backtrackingPlayer(posX, posY, beforeX, beforeY){
+    let p = -1;
+    if (posCheck == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player") {
+      do {
+        p++;
+        let deltaX = posX + checkX[p];
+        let deltaY = posY + checkY[p];
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+          if (board[deltaY][deltaX].stack.length > 0) {
+            if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
+              if (deltaY == parseInt(boardSize)-1) {
+                setPlayerwin(true);
+                return;
+              }
+              backtrackingPlayer(deltaX, deltaY, posX, posY);
+            }
+          }
+        }
+      } while (p<3);
+    } else if  (posCheck == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player"){
+      do {
+        p++;
+        let deltaX = posX + checkX[p];
+        let deltaY = posY + checkY[p];
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+          if (board[deltaY][deltaX].stack.length > 0) {
+            if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
+              if (deltaX == parseInt(boardSize)-1) {
+                setPlayerwin(true);
+                return;
+              }
+              backtrackingPlayer(deltaX, deltaY, posX, posY);
+            }
+          }
+        }
+      } while (p<3);
+    }
+  }
+
+  function backtrackingEnemy(posX, posY, beforeX, beforeY){
+    let p = -1;
+    if (posCheck == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy") {
+      do {
+        p++;
+        let deltaX = posX + checkX[p];
+        let deltaY = posY + checkY[p];
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+          if (board[deltaY][deltaX].stack.length > 0) {
+            if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
+              if (deltaY == parseInt(boardSize)-1) {
+                setEnemywin(true);
+                return;
+              }
+              backtrackingEnemy(deltaX, deltaY, posX, posY);
+            }
+          }
+        }
+      } while (p<3);
+    } else if  (posCheck == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy"){
+      do {
+        p++;
+        let deltaX = posX + checkX[p];
+        let deltaY = posY + checkY[p];
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+          if (board[deltaY][deltaX].stack.length > 0) {
+            if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
+              if (deltaX == parseInt(boardSize)-1) {
+                setEnemywin(true);
+                return;
+              }
+              backtrackingEnemy(deltaX, deltaY, posX, posY);
+            }
+          }
+        }
+      } while (p<3);
+    }
+  }
+
+  function checkGameTop(){
+    for (let i = 0; i < board[0].length; i++) {
+      if (board[0][i].stack.length > 0) {
+        if (playerWin == true) {
+          return;
+        }
+        backtrackingPlayer(i, 0, -1, -1);
+      }
+    }
+    for (let i = 0; i < board[0].length; i++) {
+      if (board[0][i].stack.length > 0) {
+        if (enemyWin == true) {
+          return;
+        }
+        backtrackingEnemy(i, 0, -1, -1);
+      }
+    }
+    if (enemyWin == false && playerWin == false) {
+      setPoscheck("left");
+    }
+  }
+
+  function checkGameLeft(){
+    for (let i = 0; i < board.length; i++) {
+      if (board[i][0].stack.length > 0) {
+        if (playerWin == true) {
+          return;
+        }
+        backtrackingPlayer(0, i, -1, -1);
+      }
+    }
+    for (let i = 0; i < board.length; i++) {
+      if (enemyWin == true) {
+        return;
+      }
+      if (board[i][0].stack.length > 0) {
+        backtrackingEnemy(0, i, -1, -1);
+      }
+    }
+    setPoscheck("top")
+  }
+
+  useEffect(() => {
+    if (posCheck == "left") {
+      checkGameLeft()
+    }else if(posCheck == "top"){
+      
+    }
+  }, [posCheck]);
+
+  useEffect(() => {
+    checkWin();
+  }, [playerWin]);
+
+  useEffect(() => {
+    checkWin();
+  }, [enemyWin]);
+
   function checkWin() {
-    alert('you win!');
+    if (playerWin == true) {
+      alert('you win!');
+    }
+    if (enemyWin == true) {
+      alert("enemy win!")
+    }
   }
 
   function putNewStone(col, row, type) {
