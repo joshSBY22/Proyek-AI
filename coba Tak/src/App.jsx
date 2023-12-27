@@ -31,6 +31,10 @@ function App() {
   const [enemyInitial, setEnemyInitial] = useState(0);
 
   useEffect(() => {
+    localStorage.clear();
+  }, []);
+
+  useEffect(() => {
     setBoard([...board]);
   }, [selectedCell, selectedTargetCell]);
 
@@ -105,7 +109,9 @@ function App() {
     if (turn == "player") {
       setTurn("enemy");
     } else {
-      setTurn("player");
+      if (localStorage.getItem("valid")) {
+        setTurn("player");
+      }
     }
   }
 
@@ -142,19 +148,22 @@ function App() {
   }
 
   function moveSinglePiece(colStart, rowStart, colTarget, rowTarget) {
-    let piece = board[rowStart][colStart].stack[0];
+    if (userInitial == 1 && enemyInitial == 1) {//if both user and enemy has already done their initial move
+      let piece = board[rowStart][colStart].stack[0];
 
-    //flatten first before add 
-    if (board[rowTarget][colTarget].stack.length > 0) {//memastikan target single piece yang dicek tidak kosong untuk mencegah error
-      if (board[rowTarget][colTarget].stack[board[rowTarget][colTarget].stack.length - 1].type == "wallstone" && selectedStone == "capstone" || enemySelectedStone == "capstone") {
-        //flatten wall when capstone is put on the wall
-        board[rowTarget][colTarget].stack[board[rowTarget][colTarget].stack.length - 1].type = "flatstone";
+      //flatten first before add 
+      if (board[rowTarget][colTarget].stack.length > 0) {//memastikan target single piece yang dicek tidak kosong untuk mencegah error
+        if (board[rowTarget][colTarget].stack[board[rowTarget][colTarget].stack.length - 1].type == "wallstone" && selectedStone == "capstone" || enemySelectedStone == "capstone") {
+          //flatten wall when capstone is put on the wall
+          board[rowTarget][colTarget].stack[board[rowTarget][colTarget].stack.length - 1].type = "flatstone";
+        }
       }
+      // alert(JSON.stringify(piece));
+      //add new piece to the top of stack
+      board[rowStart][colStart].stack.splice(0, 1);
+      board[rowTarget][colTarget].stack.push(piece);
+
     }
-    // alert(JSON.stringify(piece));
-    //add new piece to the top of stack
-    board[rowStart][colStart].stack.splice(0, 1);
-    board[rowTarget][colTarget].stack.push(piece);
   }
 
   function moveStackOfPiece(colStart, rowStart, colTarget, rowTarget, valid) {
@@ -359,6 +368,7 @@ function App() {
   }
 
   function isMoveSingleValid(colStart, rowStart, colTarget, rowTarget) {
+
     let piece = board[rowStart][colStart].stack[0];
     let topTargetPiece = board[rowTarget][colTarget].stack[board[rowTarget][colTarget].stack.length - 1];
     if (board[rowTarget][colTarget].stack.length == 0) {//move ke cell kosong
@@ -670,9 +680,11 @@ function App() {
   function checkWin() {
     if (playerWin == true) {
       alert('you win!');
+      window.location.href = "/"
     }
     if (enemyWin == true) {
       alert("enemy win!")
+      window.location.href = "/"
     }
   }
 
@@ -688,6 +700,7 @@ function App() {
     } else if (enemyInitial == 0) {
       newStone.owner = "player";
       setEnemyInitial(1);
+      localStorage.setItem("valid", true);
     }
 
     for (let i = 0; i < board.length; i++) {
