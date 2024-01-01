@@ -179,22 +179,22 @@ function App() {
         let holdStack = board[rowStart][colStart].stack;
         board[rowStart][colStart].stack = [];
         for (let i = 0; i < boardSize - colStart; i++) {
-          let valid = true;
+          let validInput = true;
           do {
             jumlah = prompt("Berapa piece yang diletakkan?", 1);
             if(parseInt(jumlah) < 0){
-              valid = false;
+              validInput = false;
               alert("Jumlah tidak valid");
             }else if(i > 0 && parseInt(jumlah) < 1){//jika bukan prompt pertama minimal harus drop satu (hanya prompt pertama yang boleh diisi 0)
-              valid = false;
+              validInput = false;
               alert("Jumlah Piece yang diletakan minimal 1");
             }else if(parseInt(jumlah) > holdStack.length){//jika jumlah yang diinputkan melebihi jumlah yang ada di holdstack
-              valid = false;
+              validInput = false;
               alert("Jumlah Piece tidak mencukupi");
             }else{
-              valid = true;
+              validInput = true;
             }
-          } while (!valid);
+          } while (!validInput);
           let jum = parseInt(jumlah);
           let currentCol = colStart + i;
           let currentRow = rowStart;
@@ -271,7 +271,6 @@ function App() {
             break;
 
           } else if (board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1] == "wallstone") {//jika top of current stack adalah wallstone
-
             if (i == 1) {
               valid.value = false;
             }
