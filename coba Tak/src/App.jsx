@@ -450,44 +450,124 @@ function App() {
       if (rowTarget > rowStart) {// to down
         //============== to down ===============
         alert("down");
-
-        if (board[rowStart + 1][colStart].stack.length != 0 && (board[rowStart + 1][colStart].stack[board[rowStart + 1][colStart].stack.length - 1].type == "capstone" || board[rowStart + 1][colStart].stack[board[rowStart + 1][colStart].stack.length - 1].type == "wallstone")) {
+        if (board[rowStart + 1][colStart].stack.length != 0 &&
+          (board[rowStart + 1][colStart].stack[board[rowStart + 1][colStart].stack.length - 1].type == "capstone"
+            ||
+            (board[rowStart + 1][colStart].stack[board[rowStart + 1][colStart].stack.length - 1].type == "wallstone" && board[rowStart][colStart].stack[board[rowStart][colStart].stack.length - 1].type != "capstone"))
+        ) {
           valid.value = false;
-          board[rowStart][colStart].stack = holdStack;
         }
 
         //move stack to variable to hold the stack
         let holdStack = board[rowStart][colStart].stack;
         board[rowStart][colStart].stack = [];
-
         for (let i = 0; i < boardSize - rowStart; i++) {
-          jumlah = prompt("Berapa piece yang diletakkan?", 1);
+          let validInput = true;
+          do { //input validation
+            jumlah = prompt("Berapa piece yang diletakkan?", 1);
+            if (parseInt(jumlah) < 0) {
+              validInput = false;
+              alert("Jumlah tidak valid");
+            } else if (i > 0 && parseInt(jumlah) < 1) {//jika bukan prompt pertama minimal harus drop satu (hanya prompt pertama yang boleh diisi 0)
+              validInput = false;
+              alert("Jumlah Piece yang diletakan minimal 1");
+            } else if (parseInt(jumlah) > holdStack.length) {//jika jumlah yang diinputkan melebihi jumlah yang ada di holdstack
+              validInput = false;
+              alert("Jumlah Piece tidak mencukupi");
+            } else {
+              validInput = true;
+            }
+          } while (!validInput);
+
           let jum = parseInt(jumlah);
           let currentCol = colStart;
           let currentRow = rowStart + i;
-
           if (currentRow + 1 > boardSize - 1) {//di bagian paling bawah papan
             for (let j = 0; j < holdStack.length; j++) {
               board[currentRow][currentCol].stack.push(holdStack[j]);
             }
             break;
           }
+          if (board[currentRow + 1][currentCol].stack.length != 0 &&
+            (
+              (board[currentRow + 1][currentCol].stack[board[currentRow + 1][currentCol].stack.length - 1].type == "wallstone" && holdStack[holdStack.length - 1].type != "capstone")
+              ||
+              board[currentRow + 1][currentCol].stack[board[currentRow + 1][currentCol].stack.length - 1].type == "capstone"
+            )) {//jika sebelahnya ada stack yang tidak bisa ditumpuki               
+            if (i == 1) {//jika pertama kali stack dipindah, gerakan dibatalkan
+              valid.value = false;
+              for (let j = 0; j < holdStack.length; j++) {
+                board[currentRow + 1][currentCol].stack.push(holdStack[j]);
+              }
+            } else {
+              //move the stack that's being hold in holdStack back to board[][]
+              for (let j = 0; j < holdStack.length; j++) {
+                board[currentRow][currentCol].stack.push(holdStack[j]);
+              }
+            }
+            break;
+          } else if (jum == holdStack.length) { //all pieces left are moved      
+            if (holdStack.length == 1) {//last piece to put
+              if (holdStack[0].type == "capstone") {//last piece is capstone
+                if (board[currentRow][currentCol].stack.length == 0) {//jika current target kosong
+                  board[currentRow][currentCol].stack.push(holdStack[0]);
+                } else if (board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type == "wallstone") {//jika top of target adalah wall maka diratakan jadi flat
+                  board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type = "flatstone";
+                  board[currentRow][currentCol].stack.push(holdStack[0]);
+                } else {//top of target flat stone
+                  board[currentRow][currentCol].stack.push(holdStack[0]);
+                }
 
-          if (board[currentRow + 1][colStart].stack.length != 0 && (board[currentRow + 1][currentCol].stack[board[currentRow + 1][currentCol].stack.length - 1].type == "wallstone" || board[currentRow + 1][currentCol].stack[board[currentRow + 1][currentCol].stack.length - 1].type == "capstone")) {//jika bawahnya ada stack yang tidak bisa ditumpuki
-            for (let j = 0; j < holdStack.length; j++) {
-              board[currentRow][currentCol].stack.push(holdStack[j]);
+              } else {//last piece is a wallstone
+                board[currentRow][currentCol].stack.push(holdStack[0]);
+              }
+
+            } else {//sisa piece lebih dari satu
+              if (board[currentRow][currentCol].stack.length == 0) {//current empty
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow][currentCol].stack.push(holdStack[j]);
+                }
+              } else if (board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type == "wallstone") {//kembalikan ke sebelumnya
+                //current cell's top stack is a wallstone
+                if (i == 1) {
+                  valid.value = false;
+                }
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow - 1][currentCol].stack.push(holdStack[j]);
+                }
+              } else {//top of current flat
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow][currentCol].stack.push(holdStack[j]);
+                }
+              }
+
             }
             break;
-          } else if (jum == holdStack.length) {//all pieces left are moved
-            for (let j = 0; j < holdStack.length; j++) {
-              board[currentRow][currentCol].stack.push(holdStack[j]);
+          } else {//top of stack not a wallstone
+            if (board[currentRow][currentCol].stack.length != 0 && board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type != "flatstone") {
+              if (i == 1) {//gerakan kedua sejak peletakan pertama, batalkan move dan turn tetap
+                valid.value = false;
+                //kembalikan posisi semula
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow - 1][currentCol].stack.push(holdStack[j]);
+                }
+                resetSelected();
+                break;
+              } else {//sudah diatas 2 kali meletakan stack, sisa stack diletakan ke cell sebelumnya, turn berganti
+                //drop semua stack yang tersisa
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow - 1][currentCol].stack.push(holdStack[j]);
+                }
+                resetSelected();
+                break;
+              }
+
+            } else { //valid to drop
+              for (let j = 0; j < jum; j++) {//drop piece sesuai jumlah
+                board[currentRow][currentCol].stack.push(holdStack[0]);
+                holdStack.splice(0, 1);//hapus dari paling bawah (index 0)
+              }
             }
-            break;
-          }
-          //jika masih valid untuk mendrop piece
-          for (let j = 0; j < jum; j++) {//drop piece sesuai jumlah
-            board[currentRow][currentCol].stack.push(holdStack[0]);
-            holdStack.splice(0, 1);//hapus dari paling bawah
           }
 
         }
@@ -495,43 +575,126 @@ function App() {
       } else {//going up
         //============== to up ===============
         alert("up");
-
-        if (board[rowStart - 1][colStart].stack.length != 0 && (board[rowStart - 1][colStart].stack[board[rowStart - 1][colStart].stack.length - 1].type == "capstone" || board[rowStart - 1][colStart].stack[board[rowStart - 1][colStart].stack.length - 1].type == "wallstone")) {
+        if (board[rowStart - 1][colStart].stack.length != 0 &&
+          (board[rowStart - 1][colStart].stack[board[rowStart - 1][colStart].stack.length - 1].type == "capstone"
+            ||
+            (board[rowStart - 1][colStart].stack[board[rowStart - 1][colStart].stack.length - 1].type == "wallstone" && board[rowStart][colStart].stack[board[rowStart][colStart].stack.length - 1].type != "capstone"))
+        ) {
           valid.value = false;
         }
 
         //move stack to variable to hold the stack
         let holdStack = board[rowStart][colStart].stack;
         board[rowStart][colStart].stack = [];
-
         for (let i = 0; i < rowStart + 1; i++) {
-          jumlah = prompt("Berapa piece yang diletakkan?", 1);
+          let validInput = true;
+          do { //input validation
+            jumlah = prompt("Berapa piece yang diletakkan?", 1);
+            if (parseInt(jumlah) < 0) {
+              validInput = false;
+              alert("Jumlah tidak valid");
+            } else if (i > 0 && parseInt(jumlah) < 1) {//jika bukan prompt pertama minimal harus drop satu (hanya prompt pertama yang boleh diisi 0)
+              validInput = false;
+              alert("Jumlah Piece yang diletakan minimal 1");
+            } else if (parseInt(jumlah) > holdStack.length) {//jika jumlah yang diinputkan melebihi jumlah yang ada di holdstack
+              validInput = false;
+              alert("Jumlah Piece tidak mencukupi");
+            } else {
+              validInput = true;
+            }
+          } while (!validInput);
+
           let jum = parseInt(jumlah);
           let currentCol = colStart;
           let currentRow = rowStart - i;
-
           if (currentRow - 1 < 0) {//di bagian paling atas papan
             for (let j = 0; j < holdStack.length; j++) {
               board[currentRow][currentCol].stack.push(holdStack[j]);
             }
             break;
           }
-          if (board[currentRow - 1][currentCol].stack.length != 0 && (board[currentRow - 1][currentCol].stack[board[currentRow - 1][currentCol].stack.length - 1].type == "wallstone" || board[currentRow - 1][currentCol].stack[board[currentRow - 1][currentCol].stack.length - 1].type == "capstone")) {//jika sebelahnya ada stack yang tidak bisa ditumpuki
-            for (let j = 0; j < holdStack.length; j++) {
-              board[currentRow][currentCol].stack.push(holdStack[j]);
+          if (board[currentRow - 1][currentCol].stack.length != 0 &&
+            (
+              (board[currentRow - 1][currentCol].stack[board[currentRow - 1][currentCol].stack.length - 1].type == "wallstone" && holdStack[holdStack.length - 1].type != "capstone")
+              ||
+              board[currentRow - 1][currentCol].stack[board[currentRow - 1][currentCol].stack.length - 1].type == "capstone"
+            )) {//jika sebelahnya ada stack yang tidak bisa ditumpuki               
+            if (i == 1) {//jika pertama kali stack dipindah, gerakan dibatalkan
+              valid.value = false;
+              for (let j = 0; j < holdStack.length; j++) {
+                board[currentRow - 1][currentCol].stack.push(holdStack[j]);
+              }
+            } else {
+              //move the stack that's being hold in holdStack back to board[][]
+              for (let j = 0; j < holdStack.length; j++) {
+                board[currentRow][currentCol].stack.push(holdStack[j]);
+              }
             }
             break;
-          } else if (jum == holdStack.length) {//all pieces left are moved
-            for (let j = 0; j < holdStack.length; j++) {
-              board[currentRow][currentCol].stack.push(holdStack[j]);
+          } else if (jum == holdStack.length) { //all pieces left are moved      
+            if (holdStack.length == 1) {//last piece to put
+              if (holdStack[0].type == "capstone") {//last piece is capstone
+                if (board[currentRow][currentCol].stack.length == 0) {//jika current target kosong
+                  board[currentRow][currentCol].stack.push(holdStack[0]);
+                } else if (board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type == "wallstone") {//jika top of target adalah wall maka diratakan jadi flat
+                  board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type = "flatstone";
+                  board[currentRow][currentCol].stack.push(holdStack[0]);
+                } else {//top of target flat stone
+                  board[currentRow][currentCol].stack.push(holdStack[0]);
+                }
+
+              } else {//last piece is a wallstone
+                board[currentRow][currentCol].stack.push(holdStack[0]);
+              }
+
+            } else {//sisa piece lebih dari satu
+              if (board[currentRow][currentCol].stack.length == 0) {//current empty
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow][currentCol].stack.push(holdStack[j]);
+                }
+              } else if (board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type == "wallstone") {//kembalikan ke sebelumnya
+                //current cell's top stack is a wallstone
+                if (i == 1) {
+                  valid.value = false;
+                }
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow + 1][currentCol].stack.push(holdStack[j]);
+                }
+              } else {//top of current flat
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow][currentCol].stack.push(holdStack[j]);
+                }
+              }
+
             }
             break;
+          } else {//top of stack not a wallstone
+            if (board[currentRow][currentCol].stack.length != 0 && board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length - 1].type != "flatstone") {
+              if (i == 1) {//gerakan kedua sejak peletakan pertama, batalkan move dan turn tetap
+                valid.value = false;
+                //kembalikan posisi semula
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow + 1][currentCol].stack.push(holdStack[j]);
+                }
+                resetSelected();
+                break;
+              } else {//sudah diatas 2 kali meletakan stack, sisa stack diletakan ke cell sebelumnya, turn berganti
+                //drop semua stack yang tersisa
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow + 1][currentCol].stack.push(holdStack[j]);
+                }
+                resetSelected();
+                break;
+              }
+
+            } else { //valid to drop
+              for (let j = 0; j < jum; j++) {//drop piece sesuai jumlah
+                board[currentRow][currentCol].stack.push(holdStack[0]);
+                holdStack.splice(0, 1);//hapus dari paling bawah (index 0)
+              }
+            }
           }
-          //jika masih valid untuk mendrop piece
-          for (let j = 0; j < jum; j++) {//drop piece sesuai jumlah
-            board[currentRow][currentCol].stack.push(holdStack[0]);
-            holdStack.splice(0, 1);//hapus dari paling bawah
-          }
+
         }
 
       }
