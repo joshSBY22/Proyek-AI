@@ -179,7 +179,22 @@ function App() {
         let holdStack = board[rowStart][colStart].stack;
         board[rowStart][colStart].stack = [];
         for (let i = 0; i < boardSize - colStart; i++) {
-          jumlah = prompt("Berapa piece yang diletakkan?", 1);
+          let valid = true;
+          do {
+            jumlah = prompt("Berapa piece yang diletakkan?", 1);
+            if(parseInt(jumlah) < 0){
+              valid = false;
+              alert("Jumlah tidak valid");
+            }else if(i > 0 && parseInt(jumlah) < 1){//jika bukan prompt pertama minimal harus drop satu (hanya prompt pertama yang boleh diisi 0)
+              valid = false;
+              alert("Jumlah Piece yang diletakan minimal 1");
+            }else if(parseInt(jumlah) > holdStack.length){//jika jumlah yang diinputkan melebihi jumlah yang ada di holdstack
+              valid = false;
+              alert("Jumlah Piece tidak mencukupi");
+            }else{
+              valid = true;
+            }
+          } while (!valid);
           let jum = parseInt(jumlah);
           let currentCol = colStart + i;
           let currentRow = rowStart;
@@ -266,12 +281,37 @@ function App() {
             }
             resetSelected();
             break;
-          } else { //top stack is not a wallstone
+          }else { //top stack is not a wallstone
             //jika masih valid untuk mendrop piece
-            for (let j = 0; j < jum; j++) {//drop piece sesuai jumlah
-              board[currentRow][currentCol].stack.push(holdStack[0]);
-              holdStack.splice(0, 1);//hapus dari paling bawah (index 0)
+            //cek apakah stack target yang akan ditumpuk boleh didrop
+            //jika stack target kosong berarti valid
+            //jika stack target tidak kosong tetapi top adalah flat maka valid
+            //jika stack target ada isinya dan topnya bukan flat maka tidak valid 
+            if(board[currentRow][currentCol].stack.length != 0 && board[currentRow][currentCol].stack[board[currentRow][currentCol].stack.length-1].type != "flatstone"){
+              if(i == 1){//gerakan kedua sejak peletakan pertama, batalkan move dan turn tetap
+                valid.value = false;
+                //kembalikan posisi semula
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow][currentCol - 1].stack.push(holdStack[j]);
+                }
+                resetSelected();
+                break;
+              }else{//sudah diatas 2 kali meletakan stack, sisa stack diletakan ke cell sebelumnya, turn berganti
+                //drop semua stack yang tersisa
+                for (let j = 0; j < holdStack.length; j++) {
+                  board[currentRow][currentCol - 1].stack.push(holdStack[j]);
+                }
+                resetSelected();
+                break;
+              }
+
+            }else{ //valid to drop
+              for (let j = 0; j < jum; j++) {//drop piece sesuai jumlah
+                board[currentRow][currentCol].stack.push(holdStack[0]);
+                holdStack.splice(0, 1);//hapus dari paling bawah (index 0)
+              }
             }
+           
           }
 
         }
