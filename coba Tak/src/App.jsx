@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
+import PlayerAi from './PlayerAi';
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
+
+const {getNextMove} = PlayerAi;
+
 // import './App.css'
 
 // {type: "piece", owner: "enemy"} -->piece type
@@ -839,6 +843,17 @@ function App() {
   }
 
   function enemyMove() {
+    let isFirstTurn = false;
+    if(enemyInitial == 0){
+      isFirstTurn = true;
+    }
+
+    let pieceLeft = {
+      stone: enemyStoneAvailable,
+      capstone: enemyCapstoneAvailable
+    }
+    getNextMove(board, turn, pieceLeft, isFirstTurn);
+
     if (enemyInitial == 0 && enemySelectedStone != "flatstone") {
       alert("invalid stone type for initial step");
       resetSelected();
@@ -1122,6 +1137,7 @@ function App() {
                           if (turn == "player") {
                             move();
                           } else {
+                 
                             enemyMove();
                           }
                         } else if (selectedCell != "") {//jika sudah pilih current selected cell
