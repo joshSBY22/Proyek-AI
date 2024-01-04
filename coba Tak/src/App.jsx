@@ -876,21 +876,21 @@ function App() {
     }
   }
 
-  function backtrackingPlayer(posX, posY, beforeX, beforeY) {
+  function backtrackingPlayer(posX, posY, beforeX, beforeY, startingX, startingY) {
     let p = -1;
     if (posCheck == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player") {
       do {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaY == parseInt(boardSize) - 1) {
                 setPlayerwin(true);
                 return;
               }
-              backtrackingPlayer(deltaX, deltaY, posX, posY);
+              backtrackingPlayer(deltaX, deltaY, posX, posY, startingX, startingY);
             }
           }
         }
@@ -900,14 +900,14 @@ function App() {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaX == parseInt(boardSize) - 1) {
                 setPlayerwin(true);
                 return;
               }
-              backtrackingPlayer(deltaX, deltaY, posX, posY);
+              backtrackingPlayer(deltaX, deltaY, posX, posY, startingX, startingY);
             }
           }
         }
@@ -915,21 +915,21 @@ function App() {
     }
   }
 
-  function backtrackingEnemy(posX, posY, beforeX, beforeY) {
+  function backtrackingEnemy(posX, posY, beforeX, beforeY, startingX, startingY) {
     let p = -1;
     if (posCheck == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy") {
       do {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaY == parseInt(boardSize) - 1) {
                 setEnemywin(true);
                 return;
               }
-              backtrackingEnemy(deltaX, deltaY, posX, posY);
+              backtrackingEnemy(deltaX, deltaY, posX, posY, startingX, startingY);
             }
           }
         }
@@ -939,14 +939,14 @@ function App() {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && (deltaX != beforeX || deltaY != beforeY)) {
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaX == parseInt(boardSize) - 1) {
                 setEnemywin(true);
                 return;
               }
-              backtrackingEnemy(deltaX, deltaY, posX, posY);
+              backtrackingEnemy(deltaX, deltaY, posX, posY, startingX, startingY);
             }
           }
         }
@@ -960,7 +960,7 @@ function App() {
         if (playerWin == true) {
           return;
         }
-        backtrackingPlayer(i, 0, -1, -1);
+        backtrackingPlayer(i, 0, -1, -1, i, 0);
       }
     }
     for (let i = 0; i < board[0].length; i++) {
@@ -968,7 +968,7 @@ function App() {
         if (enemyWin == true) {
           return;
         }
-        backtrackingEnemy(i, 0, -1, -1);
+        backtrackingEnemy(i, 0, -1, -1, i, 0);
       }
     }
     if (enemyWin == false && playerWin == false) {
@@ -982,7 +982,7 @@ function App() {
         if (playerWin == true) {
           return;
         }
-        backtrackingPlayer(0, i, -1, -1);
+        backtrackingPlayer(0, i, -1, -1, 0, i);
       }
     }
     for (let i = 0; i < board.length; i++) {
@@ -990,7 +990,7 @@ function App() {
         return;
       }
       if (board[i][0].stack.length > 0) {
-        backtrackingEnemy(0, i, -1, -1);
+        backtrackingEnemy(0, i, -1, -1, 0, i);
       }
     }
     setPoscheck("top")
