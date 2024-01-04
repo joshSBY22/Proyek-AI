@@ -3,7 +3,7 @@ import PlayerAi from './PlayerAi';
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 
-const {getNextMove} = PlayerAi;
+const { getNextMove } = PlayerAi;
 
 // import './App.css'
 
@@ -34,6 +34,7 @@ function App() {
   const [userInitial, setUserInitial] = useState(0);
   const [enemyInitial, setEnemyInitial] = useState(0);
 
+  const [tempMove, setTempMove] = useState("");
   useEffect(() => {
     setBoard([...board]);
   }, [selectedCell, selectedTargetCell]);
@@ -105,9 +106,18 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if (turn == "enemy") {
+      enemyMove();
+    } else {
+
+      move();
+    };
+  }, [turn]);
   function nextTurn() {
     if (turn == "player") {
       setTurn("enemy");
+
     } else {
       setTurn("player");
     }
@@ -747,34 +757,6 @@ function App() {
           } else {
             alert("Menaruh stone hanya bisa dicell kosong");
             return false;
-            // let piece = board[i][j].stack[board[i][j].stack.length-1];//cek top of stack
-            // if(piece.owner == turn){
-            //   // console.log("Tidak bisa menaruh diatas stone sendiri");
-            //   alert("Tidak bisa menaruh diatas stone sendiri");
-            //   return false;
-            // }
-            // //jika diatas stone musuh
-            // if(piece.type == "capstone"){
-            //   alert("Tidak bisa menaruh diatas capstone");
-            //   // console.log("Tidak bisa menaruh diatas capstone");
-            //   return false;
-            // }else if(piece.type == "wallstone"){
-            //   if(turn == "player"){//cek jika yang ingin ditaruh adalah capstone
-            //     if(selectedStone == "capstone"){
-            //       return true;//valid
-            //     }
-            //   }else if(turn == "enemy"){
-            //     if(enemySelectedStone == "capstone"){
-            //       return true;
-            //     }
-            //   }
-            //   alert("Tidak bisa menaruh diatas wall");
-            //   // console.log("Tidak bisa menaruh diatas wall");
-            //   return false;
-            // }else{//musuh hanya flatstone
-            //   return true;
-            // }
-
           }
         }
 
@@ -783,6 +765,18 @@ function App() {
   }
 
   function move() {
+    let isFirstTurn = false;
+    if (enemyInitial == 0) {
+      isFirstTurn = true;
+    }
+
+    let pieceLeft = {
+      stone: enemyStoneAvailable,
+      capstone: enemyCapstoneAvailable
+    }
+    // let tempBoard = [...board];
+    let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
+    setTempMove(temp);
     if (userInitial == 0 && selectedStone != "flatstone") {//add initial step condition must be flatstone
       alert("invalid stone type for initial step");
       resetSelected();
@@ -797,6 +791,7 @@ function App() {
               setStoneAvailable(stoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
               checkGameTop();
               nextTurn();
+              // console.log("current turn : " + turn);
             } else {
               alert(selectedStone + " tidak cukup");
               resetSelected();
@@ -841,79 +836,43 @@ function App() {
 
     }
   }
-
+  // useEffect(() => {
+  //   enemyMove();
+  // }, [tempMove]);
   function enemyMove() {
-    let isFirstTurn = false;
-    if(enemyInitial == 0){
-      isFirstTurn = true;
-    }
+    if (board[tempMove.row][tempMove.col].stack.length == 0) {
+      putNewStone(tempMove.col, tempMove.row, tempMove.type);
+      //revert if clash with player piece
 
-    let pieceLeft = {
-      stone: enemyStoneAvailable,
-      capstone: enemyCapstoneAvailable
-    }
-    getNextMove(board, turn, pieceLeft, isFirstTurn);
-
-    if (enemyInitial == 0 && enemySelectedStone != "flatstone") {
-      alert("invalid stone type for initial step");
-      resetSelected();
-    } else {
-      if (selectedCell.row == selectedTargetCell.row && selectedCell.col == selectedTargetCell.col) {//put new stone move
-        if (isPutStoneValid(selectedCell.col, selectedCell.row)) {
-          if (enemySelectedStone == "flatstone" || enemySelectedStone == "wallstone") {
-            if (enemyStoneAvailable >= 1) {
-              putNewStone(selectedCell.col, selectedCell.row, enemySelectedStone);
-              setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
-              checkGameTop();
-              nextTurn();
-            } else {
-              alert(enemySelectedStone + " tidak cukup");
-              resetSelected();
-            }
-          } else if (enemySelectedStone == "capstone") {
-            if (enemyCapstoneAvailable >= 1) {
-              putNewStone(selectedCell.col, selectedCell.row, enemySelectedStone);
-              setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);
-              checkGameTop();
-              nextTurn();
-            } else {
-              alert(enemySelectedStone + " tidak cukup");
-              resetSelected();
-            }
-          }
-        } else {//move tidak valid
-          resetSelected();
-        }
-
-      } else {//moving existing stone
-        if (enemyInitial != 0) {//bukan first move enemy
-          if (isStackControlled(selectedCell.col, selectedCell.row, turn) && isMoveStackValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {
-            if (board[selectedCell.row][selectedCell.col].stack.length == 1 && isMoveSingleValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {//moving stack with single piece only
-              moveSinglePiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row);
-              checkGameTop();
-              nextTurn();
-            } else if (board[selectedCell.row][selectedCell.col].stack.length > 1) {//move stack with multiple piece
-              let valid = {
-                value: true
-              };
-              moveStackOfPiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row, valid);
-              if (valid.value == true) {
-                checkGameTop();
-                nextTurn();
-              }
-              checkGameTop();
-            }
-            resetSelected();
-          } else {
-            resetSelected();
-          }
-        } else {
-          alert("invalid initial move");
-          resetSelected();
-        }
-
+      if (tempMove.type == "capstone") {
+        setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+      } else {
+        setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+      }
+      checkGameTop();
+      nextTurn();
+    } else {      //clash with other player piece
+      console.log("bentrok")
+      //cari tempat kosong lagi
+      let isFirstTurn = false;
+      if (enemyInitial == 0) {
+        isFirstTurn = true;
       }
 
+      let pieceLeft = {
+        stone: enemyStoneAvailable,
+        capstone: enemyCapstoneAvailable
+      }
+      let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
+      putNewStone(temp.col, temp.row, temp.type);
+
+      if (temp.type == "capstone") {
+        setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+      } else {
+        setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+      }
+      checkGameTop();
+      nextTurn();
     }
   }
 
@@ -1076,18 +1035,11 @@ function App() {
     } else if (enemyInitial == 0) {
       newStone.owner = "player";
       setEnemyInitial(1);
-      localStorage.setItem("valid", true);
     }
 
     for (let i = 0; i < board.length; i++) {
       for (let j = 0; j < board[i].length; j++) {
         if (board[i][j].col == col && board[i][j].row == row) {
-          // if(board[i][j].stack.length != 0){
-          //   if(board[i][j].stack[board[i][j].stack.length-1].type == "wallstone" && selectedStone == "capstone" || enemySelectedStone == "capstone"){
-          //     //flatten wall when capstone is put on the wall
-          //     board[i][j].stack[board[i][j].stack.length-1].type = "flatstone";
-          //   }
-          // }
           board[i][j].stack.push(newStone);
           break;
         }
@@ -1137,7 +1089,6 @@ function App() {
                           if (turn == "player") {
                             move();
                           } else {
-                 
                             enemyMove();
                           }
                         } else if (selectedCell != "") {//jika sudah pilih current selected cell
