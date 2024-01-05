@@ -101,7 +101,13 @@ function applyMove(board, player, move){
         let r = parseInt(row) + dR * (i+1);
         let c = parseInt(col) + dC * (i+1);
 
-        let getStack = movedStack.splice(0, dropsCombination[i]);
+        let getStack = "";
+        if(dropsCombination.length == 1){//khusus jika hanya move satu top piece dr stack, sisanya tetap stay
+            getStack = movedStack.splice(movedStack.length-1, 1);
+        }else{
+            getStack = movedStack.splice(0, dropsCombination[i]);
+        }
+
 
         if(appliedBoard[r][c].stack.length != 0 && getStack.length != 0 && getStack[0].type == "capstone" && appliedBoard[r][c].stack[appliedBoard[r][c].stack.length-1].type == "wallstone"){
             // appliedBoard[r][c].stack[appliedBoard[r][c].stack.length-1].type = "flatstone";

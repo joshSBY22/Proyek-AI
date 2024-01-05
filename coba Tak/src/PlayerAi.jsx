@@ -6,6 +6,9 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
 
     let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
     // console.log(allPossibleMoves);//cetak semua possible move
+    if(allPossibleMoves.length == 0){
+        alert("No More Move Available!");
+    }
 
     for (let i = 0; i < allPossibleMoves.length; i++) {
         let getAppliedMoveOnTheBoard = apply(board, player, allPossibleMoves[i], isFirstTurn);
@@ -29,7 +32,7 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
     //shuffle
     shuffleArray(allPossibleMoves);
 
-    console.log(allPossibleMoves);
+    // console.log(allPossibleMoves);
 
     let bestMove = "";
 
@@ -258,7 +261,7 @@ function isLegal(board, newMove, isFirstTurn = false) {
     if (moveType == "move") {
         return isLegalMove(board, newMove);
     } else {
-        return isLegalPlace(board, newMove, isFirstTurn);//??? ini belum dibuat functionnya
+        return isLegalPlace(board, newMove, isFirstTurn);
     }
 }
 
@@ -386,6 +389,12 @@ function allowToDrop(stackTarget, stackIncoming) {
 
 function getScoreFromSBE(board, player) {
     let playerScore = 0;
+    let otherPlayer = "player";
+    if(player == "player"){
+        otherPlayer = "enemy";
+    }else{
+        otherPlayer = "player";
+    }
   
     // Hitung SBE untuk setiap konfigurasi board dari possible move
     for (let row = 0; row < board.length; row++) {
@@ -397,34 +406,197 @@ function getScoreFromSBE(board, player) {
       
             // Adjust scores based on the content of the cell
             if (pieceOnTop.type == "flatstone" && pieceOnTop.owner == player) {
-                // Flat Stone controlled by the player
+                // Flat Stone controlled by the ai player
                 if(row == 0 || row == board.length-1 || col == 0 || col == board[row.length]){//if on the outer layer / edge of the board
                     playerScore += 0.5;                
                 }
-                playerScore += 2;
+
+                //add plus score for connected flatstone
+                playerScore += isPieceInGroup(board, row, col, player);
+
+                playerScore += 2;//score for flat stone
             }else if (pieceOnTop.type == "wallstone" && pieceOnTop.owner == player) {
                 playerScore += 1; // Standing Stone controlled by the player
-            }else if (pieceOnTop.type == "capstone" && pieceOnTop.owner == player) {
-                playerScore += 2; // Captured piece controlled by the player
+            }else if (pieceOnTop.type == "capstone" && pieceOnTop.owner == player && cell.stack.length > 1 && cell.stack[cell.stack.length-2].owner == otherPlayer) {
+                playerScore += 10; // Captured other player's piece controlled by the player
+            }else if(pieceOnTop.type == "capstone" && pieceOnTop.owner == player && nearEnemyWall(board, otherPlayer, row, col)){//Capstone position near other player's wall
+                playerScore += 5;
+            }else if(pieceOnTop.type == "capstone" && pieceOnTop.owner == player){
+                playerScore += 2;
             }
 
         }
-        // Add more cases as needed for different pieces or game elements
+
       }
     }
-  
-    // Check for road completion (a simplistic check for demonstration purposes)
-    if (isRoadComplete(board, player)) {
-      playerScore += 10; // Bonus for completing a road
-    }
-  
-    // Check for control of the center (simplistic check for demonstration purposes)
+
+    //check block for enemy move
+    playerScore += blockEnemyRoad(board, player);
+
+    // Check for control of the center 
     if (isCenterControlled(board, player)) {
-      playerScore += 5; // Bonus for controlling the center
+        playerScore += 5; // Bonus for controlling the center
+    }
+
+    //check win condition for ai
+    if (checkPlayerRoadComplete(board, player)) {
+        playerScore += 300; // Bonus for completing a road
+    }
+    
+    //lose condition for ai when other player complete the road first
+    if (checkPlayerRoadComplete(board, otherPlayer)) {
+        playerScore -= 300; // lose condition
     }
   
+
     return playerScore;
-  }
+}
+
+function isPieceInGroup(board, row, col, player){//jika piece flat stone saling terhubung di arah vertikal dan horizontal
+    let plusScore = 0;
+    let r = parseInt(row);
+    let c = parseInt(col);
+    
+    //check vertical direction
+    if(r - 1 >= 0){
+
+        if(board[r-1][c].stack.length != 0 && board[r-1][c].stack[board[r-1][c].stack.length-1].type == "flatstone" && board[r-1][c].stack[board[r-1][c].stack.length-1].owner == player){
+            plusScore += 0.5;
+        }
+    }
+    if(r + 1 < board.length){
+
+        if(board[r+1][c].stack.length != 0 && board[r+1][c].stack[board[r+1][c].stack.length-1].type == "flatstone" && board[r+1][c].stack[board[r+1][c].stack.length-1].owner == player){
+            plusScore += 0.5;
+        }
+    }
+
+    //check horizontal direction
+    if(c - 1 >= 0){
+
+        if(board[r][c-1].stack.length != 0 && board[r][c-1].stack[board[r][c-1].stack.length-1].type == "flatstone" && board[r][c-1].stack[board[r][c-1].stack.length-1].owner == player){
+            plusScore += 0.5;
+        }
+    }
+    if(c + 1 < board.length){
+
+        if(board[r][c+1].stack.length != 0 && board[r][c+1].stack[board[r][c+1].stack.length-1].type == "flatstone" && board[r][c+1].stack[board[r][c+1].stack.length-1].owner == player){
+            plusScore += 0.5;
+        }
+    }
+    return plusScore;
+}
+
+function nearEnemyWall(board, otherPlayer, row, col){
+    let isNear = false;
+    let r = parseInt(row);
+    let c = parseInt(col);
+    
+    //check vertical direction
+    if(r - 1 >= 0){
+        if(board[r-1][c].stack.length != 0 && board[r-1][c].stack[board[r-1][c].stack.length-1].type == "wallstone" && board[r-1][c].stack[board[r-1][c].stack.length-1].owner == otherPlayer){
+            isNear = true;
+        }
+    }
+    if(r + 1 < board.length){
+        if(board[r+1][c].stack.length != 0 && board[r+1][c].stack[board[r+1][c].stack.length-1].type == "wallstone" && board[r+1][c].stack[board[r+1][c].stack.length-1].owner == otherPlayer){
+            isNear = true;
+        }
+    }
+
+    //check horizontal direction
+    if(c - 1 >= 0){
+        if(board[r][c-1].stack.length != 0 && board[r][c-1].stack[board[r][c-1].stack.length-1].type == "wallstone" && board[r][c-1].stack[board[r][c-1].stack.length-1].owner == otherPlayer){
+            isNear = true;
+        }
+    }
+    if(c + 1 < board.length){
+
+        if(board[r][c+1].stack.length != 0 && board[r][c+1].stack[board[r][c+1].stack.length-1].type == "wallstone" && board[r][c+1].stack[board[r][c+1].stack.length-1].owner == otherPlayer){
+            isNear = true;
+        }
+    }
+
+    return isNear;
+}
+
+
+// Function to check if the center is controlled by a player
+function isCenterControlled(board, player) {
+    const centerRow = Math.floor(board.length / 2);
+    const centerCol = Math.floor(board[0].length / 2);
+    
+    if(board[centerRow][centerCol].stack.length != 0){
+        return board[centerRow][centerCol].stack[board[centerRow][centerCol].stack.length-1].type == "flatstone" && board[centerRow][centerCol].stack[board[centerRow][centerCol].stack.length-1].owner == player;
+    }else{
+        return false;
+    }
+}
+
+function blockEnemyRoad(board, player){
+    let score = 0;
+    let otherPlayer = "player";
+    if(player == "player"){
+        otherPlayer = "enemy";
+    }else{
+        otherPlayer = "player";
+    }
+    let wallBlock = false;
+    //Check Horizontal Road
+    for (let row = 0; row < board.length; row++) {
+        let roadLength = 0;
+        wallBlock = false;
+        for (let col = 0; col < board.length; col++) {
+            if(board[row][col].stack.length > 0){
+                const topStack = board[row][col].stack[board[row][col].stack.length-1];
+                if (topStack.type == "flatstone" && topStack.owner == otherPlayer) {
+                    roadLength++;
+                    if (roadLength == board.length-1 && wallBlock) {
+                        // return true;
+                        score += 10;
+                    }
+                }else if(topStack.type == "wallstone" && topStack.owner == player){
+                    wallBlock = true;
+                    if (roadLength == board.length-1 && wallBlock) {
+                        score += 10;
+                    }
+                } else {
+                    roadLength = 0; // Reset the count
+                }
+
+            }
+        }
+    }
+
+    // Check for a vertical road
+    for (let col = 0; col < board.length; col++) {
+        let roadLength = 0;
+        wallBlock = false;
+        for (let row = 0; row < board.length; row++) {
+            if(board[row][col].stack.length > 0){
+                const topStack = board[row][col].stack[board[row][col].stack.length-1];
+                if (topStack.type == 'flatstone' && topStack.owner == otherPlayer) {
+                    roadLength++;
+                    if (roadLength == board.length-1 && wallBlock) {
+                        // return true; // Vertical road completed
+                        score += 10;
+                    }
+                } else if(topStack.type == "wallstone" && topStack.owner == player){
+                    wallBlock = true;
+                    if (roadLength == board.length-1 && wallBlock) {
+                        score += 10;
+                    }
+                } else {
+                    roadLength = 0; // Reset the count if the road is broken
+                }
+            }
+
+        }
+        
+    }
+
+    return score;
+}
   
 // Function to check if a road is complete for a player
 function isRoadComplete(board, player) {
@@ -468,19 +640,101 @@ function isRoadComplete(board, player) {
         
     }
 
-
     return false;
 }
-  
-// Function to check if the center is controlled by a player
-function isCenterControlled(board, player) {
-    const centerRow = Math.floor(board.length / 2);
-    const centerCol = Math.floor(board[0].length / 2);
+
+function checkPlayerRoadComplete(board, player){
+    let playerWin = false;
+    let boardSize = board.length;
+    for (let i = 0; i < board[0].length; i++) {
+        let size = parseInt(boardSize);
+        let helper = [];
+        let status = "top"
+        for (let i = 0; i < size; i++) {
+          let row = [];
+          for (let j = 0; j < size; j++) {
+            row.push("uncheck");
+          }
+          helper.push(row);
+        }
+        if (board[0][i].stack.length > 0) {
+          if (playerWin == true) {
+            return true;//road is complete
+          }
+          playerWin = backtrackingPlayer(board, i, 0, helper, status, player);
+        }
+    }
     
-    if(board[centerRow][centerCol].stack.length != 0){
-        return board[centerRow][centerCol].stack[board[centerRow][centerCol].stack.length-1].type == "flatstone" && board[centerRow][centerCol].stack[board[centerRow][centerCol].stack.length-1].owner == player;
-    }else{
-        return false;
+    //lanjut pengecekan horizontal
+    if (playerWin == false) {
+        
+        for (let i = 0; i < board.length; i++) {
+            let size = parseInt(boardSize);
+            let helper = [];
+            let status = "left"
+            for (let i = 0; i < size; i++) {
+                let row = [];
+                for (let j = 0; j < size; j++) {
+                    row.push("uncheck");
+                }
+                helper.push(row);
+            }
+            if (board[i][0].stack.length > 0) {
+                if (playerWin == true) {
+                    return true;//road is complete
+                }
+                playerWin = backtrackingPlayer(board, 0, i, helper, status, player);
+            }
+        }
+
+    }
+
+    return playerWin;
+}
+  
+function backtrackingPlayer(board, posX, posY, helper, status, player) {
+    let boardSize = board.length;
+    let checkX = [1, 0, -1, 0];
+    let checkY = [0, 1, 0, -1]
+    let p = -1;
+    if (status == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == player) {
+      do {
+        p++;
+        let deltaX = posX + checkX[p];
+        let deltaY = posY + checkY[p];
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
+          if (board[deltaY][deltaX].stack.length > 0) {
+            if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
+              if (deltaY == parseInt(boardSize) - 1) {
+                // setPlayerwin(true);
+                // return;
+                return true;
+              }
+              helper[posY][posX] = "checked";
+              backtrackingPlayer(board, deltaX, deltaY, helper, status, player);
+            }
+          }
+        }
+      } while (p < 3);
+    } else if (status == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == player) {
+      do {
+        p++;
+        let deltaX = posX + checkX[p];
+        let deltaY = posY + checkY[p];
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
+          if (board[deltaY][deltaX].stack.length > 0) {
+            if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
+              if (deltaX == parseInt(boardSize) - 1) {
+                // setPlayerwin(true);
+                // return;
+                return true;
+              }
+              helper[posY][posX] = "checked";
+              backtrackingPlayer(board, deltaX, deltaY, helper, status, player);
+            }
+          }
+        }
+      } while (p < 3);
     }
 }
 

@@ -928,16 +928,15 @@ function App() {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        console.log(p)
+        // console.log(p)
         if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaY == parseInt(boardSize) - 1) {
                 setEnemywin(true);
-                console.log("oon")
+                
                 return;
               }
-              console.log("kontol")
               helper[posY][posX] = "checked"
               backtrackingEnemy(deltaX, deltaY, helper, status);
             }
@@ -949,7 +948,7 @@ function App() {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        console.log(p)
+        // console.log(p)
         if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
@@ -958,7 +957,6 @@ function App() {
                 console.log("oon")
                 return;
               }
-              console.log("tai")
               helper[posY][posX] = "checked"
               backtrackingEnemy(deltaX, deltaY, helper, status);
             }
@@ -969,7 +967,6 @@ function App() {
   }
 
   function checkGameTop() {
-    console.log("test")
     for (let i = 0; i < board[0].length; i++) {
       let size = parseInt(boardSize);
       let helper = [];
@@ -1003,7 +1000,6 @@ function App() {
         if (enemyWin == true) {
           return;
         }
-        console.log("tolol")
         backtrackingEnemy(i, 0, helper, status);
       }
     }
