@@ -770,7 +770,7 @@ function App() {
               putNewStone(selectedCell.col, selectedCell.row, selectedStone);
 
               setStoneAvailable(stoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
-              checkGameTop();
+              // checkGameTop();
               nextTurn();
               // console.log("current turn : " + turn);
             } else {
@@ -781,7 +781,7 @@ function App() {
             if (capstoneAvailable >= 1) {
               putNewStone(selectedCell.col, selectedCell.row, selectedStone);
               setCapstoneAvailable(capstoneAvailable - 1);
-              checkGameTop();
+              // checkGameTop();
               nextTurn();
             } else {
               alert(selectedStone + " tidak cukup");
@@ -796,7 +796,7 @@ function App() {
         if (isStackControlled(selectedCell.col, selectedCell.row, turn) && isMoveStackValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {
           if (board[selectedCell.row][selectedCell.col].stack.length == 1 && isMoveSingleValid(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row)) {//moving stack with single piece only
             moveSinglePiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row);
-            checkGameTop();
+            // checkGameTop();
             nextTurn();
           } else if (board[selectedCell.row][selectedCell.col].stack.length > 1) {//move stack with multiple piece
             let valid = {
@@ -805,7 +805,7 @@ function App() {
             moveStackOfPiece(selectedCell.col, selectedCell.row, selectedTargetCell.col, selectedTargetCell.row, valid);
             // alert(valid.value);
             if (valid.value == true) {
-              checkGameTop();
+              // checkGameTop();
               nextTurn();
             }
           }
@@ -831,7 +831,7 @@ function App() {
         } else {
           setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
         }
-        checkGameTop();
+        // checkGameTop();
         nextTurn();
       } else {      //clash with other player piece
         console.log("bentrok")
@@ -853,7 +853,7 @@ function App() {
         } else {
           setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
         }
-        checkGameTop();
+        // checkGameTop();
         nextTurn();
       }
     } else if (tempMove.moveType == "move") {
@@ -873,45 +873,47 @@ function App() {
 
         }
       }
-      checkGameTop();
+      // checkGameTop();
       nextTurn();
     } else {//move stack
 
     }
   }
 
-  function backtrackingPlayer(posX, posY, beforeX, beforeY, startingX, startingY) {
+  function backtrackingPlayer(posX, posY, helper, status) {
     let p = -1;
-    if (posCheck == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player") {
+    if (status == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player") {
       do {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaY == parseInt(boardSize) - 1) {
                 setPlayerwin(true);
                 return;
               }
-              backtrackingPlayer(deltaX, deltaY, posX, posY, startingX, startingY);
+              helper[posY][posX] = "checked";
+              backtrackingPlayer(deltaX, deltaY, helper, status);
             }
           }
         }
       } while (p < 3);
-    } else if (posCheck == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player") {
+    } else if (status == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "player") {
       do {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "player" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaX == parseInt(boardSize) - 1) {
                 setPlayerwin(true);
                 return;
               }
-              backtrackingPlayer(deltaX, deltaY, posX, posY, startingX, startingY);
+              helper[posY][posX] = "checked";
+              backtrackingPlayer(deltaX, deltaY, helper, status);
             }
           }
         }
@@ -919,38 +921,46 @@ function App() {
     }
   }
 
-  function backtrackingEnemy(posX, posY, beforeX, beforeY, startingX, startingY) {
+  function backtrackingEnemy(posX, posY, helper, status) {
     let p = -1;
-    if (posCheck == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy") {
+    if (status == "top" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy") {
       do {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
+        console.log(p)
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaY == parseInt(boardSize) - 1) {
                 setEnemywin(true);
+                console.log("oon")
                 return;
               }
-              backtrackingEnemy(deltaX, deltaY, posX, posY, startingX, startingY);
+              console.log("kontol")
+              helper[posY][posX] = "checked"
+              backtrackingEnemy(deltaX, deltaY, helper, status);
             }
           }
         }
       } while (p < 3);
-    } else if (posCheck == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy") {
+    } else if (status == "left" && board[posY][posX].stack[board[posY][posX].stack.length - 1].owner == "enemy") {
       do {
         p++;
         let deltaX = posX + checkX[p];
         let deltaY = posY + checkY[p];
-        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && ((deltaX != beforeX || deltaY != beforeY) && (deltaX != startingX || deltaY != startingY))) {
+        console.log(p)
+        if ((deltaX >= 0 && deltaX < parseInt(boardSize) && deltaY >= 0 && deltaY < parseInt(boardSize)) && helper[deltaY][deltaX] == "uncheck") {
           if (board[deltaY][deltaX].stack.length > 0) {
             if (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].owner == "enemy" && (board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "flatstone" || board[deltaY][deltaX].stack[board[deltaY][deltaX].stack.length - 1].type == "capstone")) {
               if (deltaX == parseInt(boardSize) - 1) {
                 setEnemywin(true);
+                console.log("oon")
                 return;
               }
-              backtrackingEnemy(deltaX, deltaY, posX, posY, startingX, startingY);
+              console.log("tai")
+              helper[posY][posX] = "checked"
+              backtrackingEnemy(deltaX, deltaY, helper, status);
             }
           }
         }
@@ -959,54 +969,93 @@ function App() {
   }
 
   function checkGameTop() {
+    console.log("test")
     for (let i = 0; i < board[0].length; i++) {
+      let size = parseInt(boardSize);
+      let helper = [];
+      let status = "top"
+      for (let i = 0; i < size; i++) {
+        let row = [];
+        for (let j = 0; j < size; j++) {
+          row.push("uncheck");
+        }
+        helper.push(row);
+      }
       if (board[0][i].stack.length > 0) {
         if (playerWin == true) {
           return;
         }
-        backtrackingPlayer(i, 0, -1, -1, i, 0);
+        backtrackingPlayer(i, 0, helper, status);
       }
     }
     for (let i = 0; i < board[0].length; i++) {
+      let size = parseInt(boardSize);
+      let helper = [];
+      let status = "top"
+      for (let i = 0; i < size; i++) {
+        let row = [];
+        for (let j = 0; j < size; j++) {
+          row.push("uncheck");
+        }
+        helper.push(row);
+      }
       if (board[0][i].stack.length > 0) {
         if (enemyWin == true) {
           return;
         }
-        backtrackingEnemy(i, 0, -1, -1, i, 0);
+        console.log("tolol")
+        backtrackingEnemy(i, 0, helper, status);
       }
     }
     if (enemyWin == false && playerWin == false) {
-      setPoscheck("left");
+      checkGameLeft();
     }
   }
 
   function checkGameLeft() {
     for (let i = 0; i < board.length; i++) {
+      let size = parseInt(boardSize);
+      let helper = [];
+      let status = "left"
+      for (let i = 0; i < size; i++) {
+        let row = [];
+        for (let j = 0; j < size; j++) {
+          row.push("uncheck");
+        }
+        helper.push(row);
+      }
       if (board[i][0].stack.length > 0) {
         if (playerWin == true) {
           return;
         }
-        backtrackingPlayer(0, i, -1, -1, 0, i);
+        backtrackingPlayer(0, i, helper, status);
       }
     }
     for (let i = 0; i < board.length; i++) {
-      if (enemyWin == true) {
-        return;
+      let size = parseInt(boardSize);
+      let helper = [];
+      let status = "left"
+      for (let i = 0; i < size; i++) {
+        let row = [];
+        for (let j = 0; j < size; j++) {
+          row.push("uncheck");
+        }
+        helper.push(row);
       }
       if (board[i][0].stack.length > 0) {
-        backtrackingEnemy(0, i, -1, -1, 0, i);
+        if (enemyWin == true) {
+          return;
+        }
+        backtrackingEnemy(0, i, helper, status);
       }
     }
-    setPoscheck("top")
   }
 
   useEffect(() => {
-    if (posCheck == "left") {
-      checkGameLeft()
-    } else if (posCheck == "top") {
-
+    if (board[0]) {
+      checkGameTop()
     }
-  }, [posCheck]);
+  }, [board]);
 
   useEffect(() => {
     checkWin();
@@ -1087,7 +1136,7 @@ function App() {
           setEnemyStoneAvailable(enemyStoneAvailable-1);
         }
       }
-      checkGameTop();
+      // checkGameTop();
       nextTurn();
     }
   }, [turn]);
