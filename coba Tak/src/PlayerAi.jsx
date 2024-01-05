@@ -1,7 +1,7 @@
 
 function getNextMove(board, player, playerPieceLeft, isFirstTurn) {
     let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
-    console.log(allPossibleMoves);//cetak semua possible move
+    //console.log(allPossibleMoves);//cetak semua possible move
     let bestScore = -9999;
     let bestMove;
     for (let i = 0; i < allPossibleMoves.length; i++) {
@@ -19,75 +19,186 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn) {
     return bestMove;
 }
 
+function calculateScore(score, tempBoard) {
+    for (let i = 0; i < tempBoard.length; i++) {
+        for (let j = 0; j < tempBoard[i].length; j++) {
+            //check if cell is not empty
+            if (tempBoard[i][j].stack.length > 0) {
+                if (tempBoard[i][j].stack[tempBoard[i][j].stack.length - 1].owner == "enemy") {
+                    //stack is controlled by enemy
+
+                    for (let k = 0; k < tempBoard[i][j].stack.length; k++) {
+                        //count the value of all piece (flatstone = 1, wallstone = 2, capstone = 3)
+                        if (tempBoard[i][j].stack[k].type == "flatstone") {
+                            score += 1;
+                        } else if (tempBoard[i][j].stack[k].type == "wallstone") {
+                            score += 2;
+                        } else if (tempBoard[i][j].stack[k].type == "capstone") {
+                            score += 3;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return score;
+}
+
 function minimax(move, tempBoard, playerPieceLeft) {
     let score = 0;
     console.log(move);
+    let targetCell = tempBoard[move.row][move.col].stack
     if (move.owner == "enemy" && move.moveType == "place") {//sementara place aja yg diambil
         if (move.type == "capstone" && playerPieceLeft.capstone > 0) {
             //check if target cell is empty
-            let targetCell = tempBoard[move.row][move.col].stack
             if (targetCell.length == 0) {
                 //place new piece on an empty cell
                 targetCell.push({ type: move.type, owner: move.owner });
                 //calculate score
-                for (let i = 0; i < tempBoard.length; i++) {
-                    for (let j = 0; j < tempBoard[i].length; j++) {
-                        //check if cell is not empty
-                        if (tempBoard[i][j].stack.length > 0) {
-                            if (tempBoard[i][j].stack[tempBoard[i][j].stack.length - 1].owner == "enemy") {
-                                //stack is controlled by enemy
-
-                                for (let k = 0; k < tempBoard[i][j].stack.length; k++) {
-                                    //count the value of all piece (flatstone = 1, wallstone = 2, capstone = 3)
-                                    if (tempBoard[i][j].stack[k].type == "flatstone") {
-                                        score += 1;
-                                    } else if (tempBoard[i][j].stack[k].type == "wallstone") {
-                                        score += 2;
-                                    } else if (tempBoard[i][j].stack[k].type == "capstone") {
-                                        score += 3;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
+                score += calculateScore(score, tempBoard);
                 tempBoard[move.row][move.col].stack.splice(tempBoard[move.row][move.col].stack.length - 1); //reset
             }
         } else if (move.type != "capstone" && playerPieceLeft.stone > 0) {
-            //check if target cell is empty
-            let targetCell = tempBoard[move.row][move.col].stack
+            //check if target cell is empty           
             if (targetCell.length == 0) {
                 //place new piece on an empty cell
                 targetCell.push({ type: move.type, owner: move.owner });
                 //calculate score
-                for (let i = 0; i < tempBoard.length; i++) {
-                    for (let j = 0; j < tempBoard[i].length; j++) {
-                        //check if cell is not empty
-                        if (tempBoard[i][j].stack.length > 0) {
-                            if (tempBoard[i][j].stack[tempBoard[i][j].stack.length - 1].owner == "enemy") {
-                                //stack is controlled by enemy
-
-                                for (let k = 0; k < tempBoard[i][j].stack.length; k++) {
-                                    //count the value of all piece (flatstone = 1, wallstone = 2, capstone = 3)
-                                    if (tempBoard[i][j].stack[k].type == "flatstone") {
-                                        score += 1;
-                                    } else if (tempBoard[i][j].stack[k].type == "wallstone") {
-                                        score += 2;
-                                    } else if (tempBoard[i][j].stack[k].type == "capstone") {
-                                        score += 3;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
+                score += calculateScore(score, tempBoard);
                 tempBoard[move.row][move.col].stack.splice(tempBoard[move.row][move.col].stack.length - 1); //reset
             }
         }
-    } else {
-        //drop
+    }
+    else if (move.owner == "enemy" && move.moveType == "move") {
+        //movetype = move
+        let currentCell = tempBoard[move.row][move.col].stack;
+        //move single
+        if (currentCell.length == 1) {
+            //check direction
+            if (move.direction == "left") {
+                let leftCell = tempBoard[move.row][move.col - 1].stack;
+                //check whether the piece that's about to be moved is a capstone or not
+                if (currentCell[currentCell.length - 1].type != "capstone") {//top of current cell is normal flatstone or wallstone
+                    //check if target cell is a wallstone/capstone or not
+                    if (leftCell.length > 0) {
+                        //not empty so we can check top stack type
+                        //check target cell is a wallstone/capstone, if not both push right away
+                        if (leftCell[leftCell.length - 1].type == "wallstone" || leftCell[leftCell.length - 1].type == "capstone") {
+                            //dont push
+                            console.log("dont push")
+                        } else {
+                            //move single with top not a capstone, score+4
+                            //if top is a wallstone, +11
+                            if (currentCell[currentCell.length - 1].type == "wallstone") {
+                                score += 5;
+                            } else {
+                                //move single flatstone over flatstone
+                                score += 4;
+                            }
+                            //calculate score
+                            score += calculateScore(score, tempBoard);
+                            tempBoard[move.row][move.col - 1].stack.push(currentCell[currentCell.length - 1]);
+                            //pop after move
+                            currentCell.pop();
+                        }
+                        console.log("type:" + tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1].type)
+                    } else {//move single to an empty cell
+                        //empty, push right away but no score
+                        tempBoard[move.row][move.col - 1].stack.push(currentCell[currentCell.length - 1]);
+                        //pop after move
+                        currentCell.pop();
+                    }
+                    //reset
+                    currentCell.push(tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1]); //reset
+                    leftCell.pop(); //remove last element 
+                } else if (currentCell[currentCell.length - 1].type == "capstone") {//capstone, will flatten wall if any before pushing
+                    score += 8; //top is a capstone 
+                    let leftIsWallstone = false;
+                    if (tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1].type == "wallstone") {
+                        //flatten
+                        leftIsWallstone = true;
+                        tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1].type = "flatstone";
+                    }
+
+                    tempBoard[move.row][move.col - 1].stack.push(currentCell[tempBoard[move.row][move.col].stack.length - 1]);
+                    //splice after move
+                    currentCell.pop(); // move single pasti dari index 0
+                    //calculate score
+                    score += calculateScore(score, tempBoard);
+                    //reset left movement
+                    currentCell.push(tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1]); //reset
+                    leftCell.pop(); //remove last element 
+                    if (leftIsWallstone) {
+                        leftCell[leftCell.length - 1].type = "wallstone";
+                        leftIsWallstone = false;
+                    }
+
+                }
+
+            } else if (move.direction == "right") {
+                let rightCell = tempBoard[move.row][move.col + 1].stack;
+                //check whether the piece that's about to be moved is a capstone or not
+                if (currentCell[currentCell.length - 1].type != "capstone") {//top of current cell is normal flatstone or wallstone
+                    console.log("normal piece")
+                    //check if target cell is a wallstone/capstone or not
+                    if (rightCell.length > 0) {
+                        //not empty so we can check top stack type
+                        //check target cell is a wallstone/capstone, if not both= push right away
+                        if (rightCell[rightCell.length - 1].type == "wallstone" || rightCell[rightCell.length - 1].type == "capstone") {
+                            //dont push
+                            console.log("dont push")
+                        } else {
+                            //move single with top not a capstone, score+4
+                            //if top is a wallstone, +11
+                            if (currentCell[currentCell.length - 1].type == "wallstone") {
+                                score += 5;
+                            } else {
+                                //move single flatstone over flatstone
+                                score += 4;
+                            }
+                            //calculate score
+                            score += calculateScore(score, tempBoard);
+                            rightCell.push(currentCell[currentCell.length - 1]);
+                            //pop after move
+                            currentCell.pop();
+                        }
+                    } else {//move single to an empty cell
+                        //empty, push right away but no score
+                        rightCell.push(currentCell[currentCell.length - 1]);
+                        //pop after move
+                        currentCell.pop();
+                    }
+                    //reset
+                    currentCell.push(rightCell[rightCell.length - 1]); //reset
+                    rightCell.pop(); //remove last element 
+                } else if (currentCell[currentCell.length - 1].type == "capstone") {//capstone, will flatten wall if any before pushing
+                    score += 8; //move single with capstone on top
+                    let rightIsWallstone = false;
+                    // console.log("right cell type is " + rightCell[rightCell.length - 1]);
+                    if (rightCell[rightCell.length - 1] != undefined) {
+                        if (rightCell[rightCell.length - 1].type == "wallstone") {
+                            //flatten
+                            rightIsWallstone = true;
+                            rightCell[rightCell.length - 1].type = "flatstone";
+                        }
+
+                        rightCell.push(currentCell[tempBoard[move.row][move.col].stack.length - 1]);
+                        //splice after move
+                        currentCell.pop(); // move single pasti dari index 0
+                        //calculate score
+                        score += calculateScore(score, tempBoard);
+                        //reset left movement
+                        currentCell.push(rightCell[rightCell.length - 1]); //reset
+                        rightCell.pop(); //remove last element 
+                        if (rightIsWallstone) {
+                            rightCell[rightCell.length - 1].type = "wallstone";
+                            rightIsWallstone = false;
+                        }
+                    }
+
+                }
+            }
+        }
 
     }
     return score;

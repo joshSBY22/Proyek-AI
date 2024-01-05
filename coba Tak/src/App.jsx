@@ -765,18 +765,6 @@ function App() {
   }
 
   function move() {
-    let isFirstTurn = false;
-    if (enemyInitial == 0) {
-      isFirstTurn = true;
-    }
-
-    let pieceLeft = {
-      stone: enemyStoneAvailable,
-      capstone: enemyCapstoneAvailable
-    }
-    // let tempBoard = [...board];
-    let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
-    setTempMove(temp);
     if (userInitial == 0 && selectedStone != "flatstone") {//add initial step condition must be flatstone
       alert("invalid stone type for initial step");
       resetSelected();
@@ -788,6 +776,7 @@ function App() {
               // console.log("masuk");
 
               putNewStone(selectedCell.col, selectedCell.row, selectedStone);
+
               setStoneAvailable(stoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
               checkGameTop();
               nextTurn();
@@ -835,44 +824,82 @@ function App() {
       }
 
     }
+    let isFirstTurn = false;
+    if (enemyInitial == 0) {
+      isFirstTurn = true;
+    }
+
+    let pieceLeft = {
+      stone: enemyStoneAvailable,
+      capstone: enemyCapstoneAvailable
+    }
+    // let tempBoard = [...board];
+    let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
+    //cek kalo bentrok
+    // if (board[temp.row][temp.col].stack.length != 0) {
+    //   console.log("bentrok2");
+    // }
+    console.log(temp);
+    setTempMove(temp);
   }
-  // useEffect(() => {
-  //   enemyMove();
-  // }, [tempMove]);
   function enemyMove() {
-    if (board[tempMove.row][tempMove.col].stack.length == 0) {
-      putNewStone(tempMove.col, tempMove.row, tempMove.type);
-      //revert if clash with player piece
+    //put new stone movement
+    if (tempMove.moveType == "place") {
+      if (board[tempMove.row][tempMove.col].stack.length == 0) {
+        putNewStone(tempMove.col, tempMove.row, tempMove.type);
+        //revert if clash with player piece
 
-      if (tempMove.type == "capstone") {
-        setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
-      } else {
-        setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+        if (tempMove.type == "capstone") {
+          setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+        } else {
+          setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+        }
+        checkGameTop();
+        nextTurn();
+      } else {      //clash with other player piece
+        console.log("bentrok")
+        //cari tempat kosong lagi
+        let isFirstTurn = false;
+        if (enemyInitial == 0) {
+          isFirstTurn = true;
+        }
+
+        let pieceLeft = {
+          stone: enemyStoneAvailable,
+          capstone: enemyCapstoneAvailable
+        }
+        let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
+        putNewStone(temp.col, temp.row, temp.type);
+
+        if (temp.type == "capstone") {
+          setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+        } else {
+          setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
+        }
+        checkGameTop();
+        nextTurn();
+      }
+    } else if (tempMove.moveType == "move") {
+      //move single only
+      if (board[tempMove.row][tempMove.col].stack.length == 1) {
+        //check direction
+        if (tempMove.direction == "left") {
+          moveSinglePiece(tempMove.col, tempMove.row, tempMove.col - 1, tempMove.row);
+        } else if (tempMove.direction == "right") {
+          moveSinglePiece(tempMove.col, tempMove.row, tempMove.col + 1, tempMove.row);
+
+        } else if (tempMove.direction == "up") {
+          moveSinglePiece(tempMove.col, tempMove.row, tempMove.col, tempMove.row - 1);
+
+        } else {//down
+          moveSinglePiece(tempMove.col, tempMove.row, tempMove.col, tempMove.row + 1);
+
+        }
       }
       checkGameTop();
       nextTurn();
-    } else {      //clash with other player piece
-      console.log("bentrok")
-      //cari tempat kosong lagi
-      let isFirstTurn = false;
-      if (enemyInitial == 0) {
-        isFirstTurn = true;
-      }
+    } else {//move stack
 
-      let pieceLeft = {
-        stone: enemyStoneAvailable,
-        capstone: enemyCapstoneAvailable
-      }
-      let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
-      putNewStone(temp.col, temp.row, temp.type);
-
-      if (temp.type == "capstone") {
-        setEnemyCapstoneAvailable(enemyCapstoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
-      } else {
-        setEnemyStoneAvailable(enemyStoneAvailable - 1);//kurangi jumlah stone yg sudah dipakai
-      }
-      checkGameTop();
-      nextTurn();
     }
   }
 
@@ -1040,7 +1067,13 @@ function App() {
     for (let i = 0; i < board.length; i++) {
       for (let j = 0; j < board[i].length; j++) {
         if (board[i][j].col == col && board[i][j].row == row) {
-          board[i][j].stack.push(newStone);
+          if (board[i][j].stack.length != 0) {
+            //initial step bentrok, cari tempat kosong lagi
+            console.log("bentrok 2")
+            board[i][j + 1].stack.push(newStone);
+          } else {//aman, initial step tidak bentrok
+            board[i][j].stack.push(newStone);
+          }
           break;
         }
 
