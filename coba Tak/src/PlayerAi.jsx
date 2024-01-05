@@ -1,209 +1,69 @@
+import ApplyMove from "./ApplyMove";
 
-function getNextMove(board, player, playerPieceLeft, isFirstTurn) {
+let {apply} = ApplyMove;
+
+function getNextMove(board, player, playerPieceLeft, isFirstTurn){
+
     let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
-    //console.log(allPossibleMoves);//cetak semua possible move
-    let bestScore = -9999;
-    let bestMove;
+    // console.log(allPossibleMoves);//cetak semua possible move
+
     for (let i = 0; i < allPossibleMoves.length; i++) {
-        //copy board
-        let newBoard = [...board];
-        // console.log(board === newBoard);
-        let score = minimax(allPossibleMoves[i], newBoard, playerPieceLeft); //(move,board)
-        if (score > bestScore) {//get max value for enemy
-            bestScore = score;
-            bestMove = allPossibleMoves[i];
+        let getAppliedMoveOnTheBoard = apply(board, player, allPossibleMoves[i], isFirstTurn);
+        allPossibleMoves[i].boardState = getAppliedMoveOnTheBoard;
+
+        //hitung langkah terbaik
+        if (isFirstTurn) {
+            //menghitung langkah saat menggerakkan piece lawan di move pertama 
+            let thePlayer = "enemy";
+            if(player == "enemy"){
+                thePlayer = "player";
+            }
+
+            allPossibleMoves[i].score = getScoreFromSBE(getAppliedMoveOnTheBoard, thePlayer);
+        }else{
+            allPossibleMoves[i].score = getScoreFromSBE(getAppliedMoveOnTheBoard, player);
         }
     }
-    console.log("best next move score:" + bestScore);
-    console.log("best next move:" + JSON.stringify(bestMove));
+    console.log(allPossibleMoves);//cetak semua possible move
+    
+    //shuffle
+    shuffleArray(allPossibleMoves);
+
+    console.log(allPossibleMoves);
+
+    let bestMove = "";
+
+    if(isFirstTurn){//dapatkan posisi terjelek untuk musuh di peletakan batu yang pertama 
+        let minScore = 999999999;
+        for (let i = 0; i < allPossibleMoves.length; i++) {
+            if(allPossibleMoves[i].score < minScore){
+                minScore = allPossibleMoves[i].score;
+                bestMove = allPossibleMoves[i];
+            }
+        }
+    }else{
+        //dapatkan langkah terbaik untuk ai
+        let maxScore = -999999999;
+        for (let i = 0; i < allPossibleMoves.length; i++) {
+            if(allPossibleMoves[i].score > maxScore){
+                maxScore = allPossibleMoves[i].score;
+                bestMove = allPossibleMoves[i];
+            }
+        }
+    }
+
+    //return best move
     return bestMove;
 }
 
-function calculateScore(score, tempBoard) {
-    for (let i = 0; i < tempBoard.length; i++) {
-        for (let j = 0; j < tempBoard[i].length; j++) {
-            //check if cell is not empty
-            if (tempBoard[i][j].stack.length > 0) {
-                if (tempBoard[i][j].stack[tempBoard[i][j].stack.length - 1].owner == "enemy") {
-                    //stack is controlled by enemy
-
-                    for (let k = 0; k < tempBoard[i][j].stack.length; k++) {
-                        //count the value of all piece (flatstone = 1, wallstone = 2, capstone = 3)
-                        if (tempBoard[i][j].stack[k].type == "flatstone") {
-                            score += 1;
-                        } else if (tempBoard[i][j].stack[k].type == "wallstone") {
-                            score += 2;
-                        } else if (tempBoard[i][j].stack[k].type == "capstone") {
-                            score += 3;
-                        }
-                    }
-                }
-            }
-        }
+function shuffleArray(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        let j = Math.floor(Math.random() * arr.length);
+        let temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
     }
-    return score;
 }
-
-function minimax(move, tempBoard, playerPieceLeft) {
-    let score = 0;
-    console.log(move);
-    let targetCell = tempBoard[move.row][move.col].stack
-    if (move.owner == "enemy" && move.moveType == "place") {//sementara place aja yg diambil
-        if (move.type == "capstone" && playerPieceLeft.capstone > 0) {
-            //check if target cell is empty
-            if (targetCell.length == 0) {
-                //place new piece on an empty cell
-                targetCell.push({ type: move.type, owner: move.owner });
-                //calculate score
-                score += calculateScore(score, tempBoard);
-                tempBoard[move.row][move.col].stack.splice(tempBoard[move.row][move.col].stack.length - 1); //reset
-            }
-        } else if (move.type != "capstone" && playerPieceLeft.stone > 0) {
-            //check if target cell is empty           
-            if (targetCell.length == 0) {
-                //place new piece on an empty cell
-                targetCell.push({ type: move.type, owner: move.owner });
-                //calculate score
-                score += calculateScore(score, tempBoard);
-                tempBoard[move.row][move.col].stack.splice(tempBoard[move.row][move.col].stack.length - 1); //reset
-            }
-        }
-    }
-    else if (move.owner == "enemy" && move.moveType == "move") {
-        //movetype = move
-        let currentCell = tempBoard[move.row][move.col].stack;
-        //move single
-        if (currentCell.length == 1) {
-            //check direction
-            if (move.direction == "left") {
-                let leftCell = tempBoard[move.row][move.col - 1].stack;
-                //check whether the piece that's about to be moved is a capstone or not
-                if (currentCell[currentCell.length - 1].type != "capstone") {//top of current cell is normal flatstone or wallstone
-                    //check if target cell is a wallstone/capstone or not
-                    if (leftCell.length > 0) {
-                        //not empty so we can check top stack type
-                        //check target cell is a wallstone/capstone, if not both push right away
-                        if (leftCell[leftCell.length - 1].type == "wallstone" || leftCell[leftCell.length - 1].type == "capstone") {
-                            //dont push
-                            console.log("dont push")
-                        } else {
-                            //move single with top not a capstone, score+4
-                            //if top is a wallstone, +11
-                            if (currentCell[currentCell.length - 1].type == "wallstone") {
-                                score += 5;
-                            } else {
-                                //move single flatstone over flatstone
-                                score += 4;
-                            }
-                            //calculate score
-                            score += calculateScore(score, tempBoard);
-                            tempBoard[move.row][move.col - 1].stack.push(currentCell[currentCell.length - 1]);
-                            //pop after move
-                            currentCell.pop();
-                        }
-                        console.log("type:" + tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1].type)
-                    } else {//move single to an empty cell
-                        //empty, push right away but no score
-                        tempBoard[move.row][move.col - 1].stack.push(currentCell[currentCell.length - 1]);
-                        //pop after move
-                        currentCell.pop();
-                    }
-                    //reset
-                    currentCell.push(tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1]); //reset
-                    leftCell.pop(); //remove last element 
-                } else if (currentCell[currentCell.length - 1].type == "capstone") {//capstone, will flatten wall if any before pushing
-                    score += 8; //top is a capstone 
-                    let leftIsWallstone = false;
-                    if (tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1].type == "wallstone") {
-                        //flatten
-                        leftIsWallstone = true;
-                        tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1].type = "flatstone";
-                    }
-
-                    tempBoard[move.row][move.col - 1].stack.push(currentCell[tempBoard[move.row][move.col].stack.length - 1]);
-                    //splice after move
-                    currentCell.pop(); // move single pasti dari index 0
-                    //calculate score
-                    score += calculateScore(score, tempBoard);
-                    //reset left movement
-                    currentCell.push(tempBoard[move.row][move.col - 1].stack[tempBoard[move.row][move.col - 1].stack.length - 1]); //reset
-                    leftCell.pop(); //remove last element 
-                    if (leftIsWallstone) {
-                        leftCell[leftCell.length - 1].type = "wallstone";
-                        leftIsWallstone = false;
-                    }
-
-                }
-
-            } else if (move.direction == "right") {
-                let rightCell = tempBoard[move.row][move.col + 1].stack;
-                //check whether the piece that's about to be moved is a capstone or not
-                if (currentCell[currentCell.length - 1].type != "capstone") {//top of current cell is normal flatstone or wallstone
-                    console.log("normal piece")
-                    //check if target cell is a wallstone/capstone or not
-                    if (rightCell.length > 0) {
-                        //not empty so we can check top stack type
-                        //check target cell is a wallstone/capstone, if not both= push right away
-                        if (rightCell[rightCell.length - 1].type == "wallstone" || rightCell[rightCell.length - 1].type == "capstone") {
-                            //dont push
-                            console.log("dont push")
-                        } else {
-                            //move single with top not a capstone, score+4
-                            //if top is a wallstone, +11
-                            if (currentCell[currentCell.length - 1].type == "wallstone") {
-                                score += 5;
-                            } else {
-                                //move single flatstone over flatstone
-                                score += 4;
-                            }
-                            //calculate score
-                            score += calculateScore(score, tempBoard);
-                            rightCell.push(currentCell[currentCell.length - 1]);
-                            //pop after move
-                            currentCell.pop();
-                        }
-                    } else {//move single to an empty cell
-                        //empty, push right away but no score
-                        rightCell.push(currentCell[currentCell.length - 1]);
-                        //pop after move
-                        currentCell.pop();
-                    }
-                    //reset
-                    currentCell.push(rightCell[rightCell.length - 1]); //reset
-                    rightCell.pop(); //remove last element 
-                } else if (currentCell[currentCell.length - 1].type == "capstone") {//capstone, will flatten wall if any before pushing
-                    score += 8; //move single with capstone on top
-                    let rightIsWallstone = false;
-                    // console.log("right cell type is " + rightCell[rightCell.length - 1]);
-                    if (rightCell[rightCell.length - 1] != undefined) {
-                        if (rightCell[rightCell.length - 1].type == "wallstone") {
-                            //flatten
-                            rightIsWallstone = true;
-                            rightCell[rightCell.length - 1].type = "flatstone";
-                        }
-
-                        rightCell.push(currentCell[tempBoard[move.row][move.col].stack.length - 1]);
-                        //splice after move
-                        currentCell.pop(); // move single pasti dari index 0
-                        //calculate score
-                        score += calculateScore(score, tempBoard);
-                        //reset left movement
-                        currentCell.push(rightCell[rightCell.length - 1]); //reset
-                        rightCell.pop(); //remove last element 
-                        if (rightIsWallstone) {
-                            rightCell[rightCell.length - 1].type = "wallstone";
-                            rightIsWallstone = false;
-                        }
-                    }
-
-                }
-            }
-        }
-
-    }
-    return score;
-}
-
 
 //bentuk susunan objek
 
@@ -224,49 +84,53 @@ function getAllMoves(board, player, isFirstTurn, playerPieceLeft) {
     //possible move for place new stone
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
-            let newMove = "";
-            if (!isFirstTurn) {//not first move, free to place all stone type
-                if (playerPieceLeft.stone > 0) {//jumlah stone untuk flatstone dan wallstone mencukupi
+            //seluruh move berjenis place harus ditempat kosong 
+            if(board[i][j].stack.length == 0){
+                let newMove = "";
+                if(!isFirstTurn){//not first move, free to place all stone type
+                    if(playerPieceLeft.stone > 0){//jumlah stone untuk flatstone dan wallstone mencukupi
+                        newMove = {
+                            type: "flatstone",
+                            col: j,
+                            row: i,
+                            owner: player,
+                            moveType: "place",
+                        }
+                        allPossibleMoves.push(newMove);
+        
+                        newMove = {
+                            type: "wallstone",
+                            col: j,
+                            row: i,
+                            owner: player,
+                            moveType: "place",
+                        }
+                        allPossibleMoves.push(newMove);
+                    }
+    
+                    if(playerPieceLeft.capstone > 0){//jumlah capstone mencukupi
+                        newMove = {
+                            type: "capstone",
+                            col: j,
+                            row: i,
+                            owner: player,
+                            moveType: "place",
+                        }
+                        allPossibleMoves.push(newMove);
+                    }
+    
+    
+                }else{// first move, place other player flatstone
                     newMove = {
                         type: "flatstone",
                         col: j,
                         row: i,
-                        owner: player,
-                        moveType: "place",
-                    }
-                    allPossibleMoves.push(newMove);
-
-                    newMove = {
-                        type: "wallstone",
-                        col: j,
-                        row: i,
-                        owner: player,
+                        owner: otherPlayer,
                         moveType: "place",
                     }
                     allPossibleMoves.push(newMove);
                 }
 
-                if (playerPieceLeft.capstone > 0) {//jumlah capstone mencukupi
-                    newMove = {
-                        type: "capstone",
-                        col: j,
-                        row: i,
-                        owner: player,
-                        moveType: "place",
-                    }
-                    allPossibleMoves.push(newMove);
-                }
-
-
-            } else {// first move, place other player flatstone
-                newMove = {
-                    type: "flatstone",
-                    col: j,
-                    row: i,
-                    owner: otherPlayer,
-                    moveType: "place",
-                }
-                allPossibleMoves.push(newMove);
             }
 
         }
@@ -445,10 +309,10 @@ function isLegalMove(board, newMove) {
     }
 
     //move stack keluar melebihi batas papan
-    if ((direction == "up" && row + drops.length >= board.length) ||
-        (direction == "down" && row - drops.length < 0) ||
-        (direction == "right" && col + drops.length >= board.length) ||
-        (direction == "left" && col - drops.length < 0)) {
+    if((direction == "up" && row - drops.length < 0) || 
+    (direction == "down" && row + drops.length >= board.length) || 
+    (direction == "right" && col + drops.length >= board.length) ||
+    (direction == "left" && col - drops.length < 0)){
         return false;
     }
     // console.log(board[row][col]);
@@ -519,4 +383,107 @@ function allowToDrop(stackTarget, stackIncoming) {
 
 }
 
-export default { getNextMove };
+
+function getScoreFromSBE(board, player) {
+    let playerScore = 0;
+  
+    // Hitung SBE untuk setiap konfigurasi board dari possible move
+    for (let row = 0; row < board.length; row++) {
+      for (let col = 0; col < board[row].length; col++) {
+        const cell = board[row][col];
+
+        if(cell.stack.length != 0){
+            const pieceOnTop = cell.stack[cell.stack.length-1];
+      
+            // Adjust scores based on the content of the cell
+            if (pieceOnTop.type == "flatstone" && pieceOnTop.owner == player) {
+                // Flat Stone controlled by the player
+                if(row == 0 || row == board.length-1 || col == 0 || col == board[row.length]){//if on the outer layer / edge of the board
+                    playerScore += 0.5;                
+                }
+                playerScore += 2;
+            }else if (pieceOnTop.type == "wallstone" && pieceOnTop.owner == player) {
+                playerScore += 1; // Standing Stone controlled by the player
+            }else if (pieceOnTop.type == "capstone" && pieceOnTop.owner == player) {
+                playerScore += 2; // Captured piece controlled by the player
+            }
+
+        }
+        // Add more cases as needed for different pieces or game elements
+      }
+    }
+  
+    // Check for road completion (a simplistic check for demonstration purposes)
+    if (isRoadComplete(board, player)) {
+      playerScore += 10; // Bonus for completing a road
+    }
+  
+    // Check for control of the center (simplistic check for demonstration purposes)
+    if (isCenterControlled(board, player)) {
+      playerScore += 5; // Bonus for controlling the center
+    }
+  
+    return playerScore;
+  }
+  
+// Function to check if a road is complete for a player
+function isRoadComplete(board, player) {
+
+    //Check Horizontal Road
+    for (let row = 0; row < board.length; row++) {
+        let roadLength = 0;
+        for (let col = 0; col < board.length; col++) {
+            if(board[row][col].stack.length > 0){
+                const topStack = board[row][col].stack[board[row][col].stack.length-1];
+                if (topStack.type == "flatstone" && topStack.owner == player) {
+                    roadLength++;
+                    if (roadLength >= board.length) {
+                        return true; // Horizontal road completed
+                    }
+                } else {
+                    roadLength = 0; // Reset the count if the road is broken
+                }
+
+            }
+        }
+    }
+
+    // Check for a vertical road
+    for (let col = 0; col < board.length; col++) {
+        let roadLength = 0;
+        for (let row = 0; row < board.length; row++) {
+            if(board[row][col].stack.length > 0){
+                const topStack = board[row][col].stack[board[row][col].stack.length-1];
+                if (topStack.type == 'flatstone' && topStack.owner == player) {
+                    roadLength++;
+                    if (roadLength >= board.length) {
+                        return true; // Vertical road completed
+                    }
+                } else {
+                    roadLength = 0; // Reset the count if the road is broken
+                }
+            }
+
+        }
+        
+    }
+
+
+    return false;
+}
+  
+// Function to check if the center is controlled by a player
+function isCenterControlled(board, player) {
+    const centerRow = Math.floor(board.length / 2);
+    const centerCol = Math.floor(board[0].length / 2);
+    
+    if(board[centerRow][centerCol].stack.length != 0){
+        return board[centerRow][centerCol].stack[board[centerRow][centerCol].stack.length-1].type == "flatstone" && board[centerRow][centerCol].stack[board[centerRow][centerCol].stack.length-1].owner == player;
+    }else{
+        return false;
+    }
+}
+
+
+
+export default {getNextMove};

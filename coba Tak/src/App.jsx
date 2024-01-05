@@ -106,14 +106,6 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    if (turn == "enemy") {
-      enemyMove();
-    } else {
-
-      move();
-    };
-  }, [turn]);
   function nextTurn() {
     if (turn == "player") {
       setTurn("enemy");
@@ -824,24 +816,9 @@ function App() {
       }
 
     }
-    let isFirstTurn = false;
-    if (enemyInitial == 0) {
-      isFirstTurn = true;
-    }
 
-    let pieceLeft = {
-      stone: enemyStoneAvailable,
-      capstone: enemyCapstoneAvailable
-    }
-    // let tempBoard = [...board];
-    let temp = getNextMove(board, "enemy", pieceLeft, isFirstTurn);
-    //cek kalo bentrok
-    // if (board[temp.row][temp.col].stack.length != 0) {
-    //   console.log("bentrok2");
-    // }
-    console.log(temp);
-    setTempMove(temp);
   }
+  
   function enemyMove() {
     //put new stone movement
     if (tempMove.moveType == "place") {
@@ -1085,6 +1062,36 @@ function App() {
     console.log("put new stone");
   }
 
+  //enemy ai move
+  useEffect(() => {
+    // console.log(board);
+    if(turn == "enemy"){
+      //ai move
+      let isFirstTurn = false;
+      if(enemyInitial == 0){
+        isFirstTurn = true;
+      }
+
+      let pieceLeft = {
+        stone: enemyStoneAvailable,
+        capstone: enemyCapstoneAvailable
+      }
+      let result = getNextMove(board, turn, pieceLeft, isFirstTurn);
+      setBoard(result.boardState);
+      
+      //kurangi jumlah stone yang ditaruh
+      if(result.moveType == "place"){
+        if(result.type == "capstone"){
+          setEnemyCapstoneAvailable(enemyCapstoneAvailable-1);
+        }else{
+          setEnemyStoneAvailable(enemyStoneAvailable-1);
+        }
+      }
+      checkGameTop();
+      nextTurn();
+    }
+  }, [turn]);
+
 
   return (
     <>
@@ -1122,7 +1129,8 @@ function App() {
                           if (turn == "player") {
                             move();
                           } else {
-                            enemyMove();
+                      
+                            // enemyMove();
                           }
                         } else if (selectedCell != "") {//jika sudah pilih current selected cell
                           setSelectedTargetCell(cell);
