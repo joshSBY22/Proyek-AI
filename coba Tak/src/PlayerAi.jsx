@@ -4,59 +4,69 @@ let {apply} = ApplyMove;
 
 function getNextMove(board, player, playerPieceLeft, isFirstTurn){
 
-    let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
+    // let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
+    // // console.log(allPossibleMoves);//cetak semua possible move
+    // if(allPossibleMoves.length == 0){
+    //     alert("No More Move Available!");
+    // }
+
+    // for (let i = 0; i < allPossibleMoves.length; i++) {
+    //     let getAppliedMoveOnTheBoard = apply(board, player, allPossibleMoves[i], isFirstTurn);
+    //     allPossibleMoves[i].boardState = getAppliedMoveOnTheBoard;
+
+    //     //hitung langkah terbaik
+    //     if (isFirstTurn) {
+    //         //menghitung langkah saat menggerakkan piece lawan di move pertama 
+    //         let thePlayer = "enemy";
+    //         if(player == "enemy"){
+    //             thePlayer = "player";
+    //         }
+
+    //         allPossibleMoves[i].score = getScoreFromSBE(getAppliedMoveOnTheBoard, thePlayer);
+    //     }else{
+    //         allPossibleMoves[i].score = getScoreFromSBE(getAppliedMoveOnTheBoard, player);
+    //     }
+    // }
     // console.log(allPossibleMoves);//cetak semua possible move
-    if(allPossibleMoves.length == 0){
-        alert("No More Move Available!");
-    }
-
-    for (let i = 0; i < allPossibleMoves.length; i++) {
-        let getAppliedMoveOnTheBoard = apply(board, player, allPossibleMoves[i], isFirstTurn);
-        allPossibleMoves[i].boardState = getAppliedMoveOnTheBoard;
-
-        //hitung langkah terbaik
-        if (isFirstTurn) {
-            //menghitung langkah saat menggerakkan piece lawan di move pertama 
-            let thePlayer = "enemy";
-            if(player == "enemy"){
-                thePlayer = "player";
-            }
-
-            allPossibleMoves[i].score = getScoreFromSBE(getAppliedMoveOnTheBoard, thePlayer);
-        }else{
-            allPossibleMoves[i].score = getScoreFromSBE(getAppliedMoveOnTheBoard, player);
-        }
-    }
-    console.log(allPossibleMoves);//cetak semua possible move
     
-    //shuffle
-    shuffleArray(allPossibleMoves);
+    // //shuffle
+    // shuffleArray(allPossibleMoves);
 
     // console.log(allPossibleMoves);
 
     let bestMove = "";
 
-    if(isFirstTurn){//dapatkan posisi terjelek untuk musuh di peletakan batu yang pertama 
-        let minScore = 999999999;
-        for (let i = 0; i < allPossibleMoves.length; i++) {
-            if(allPossibleMoves[i].score < minScore){
-                minScore = allPossibleMoves[i].score;
-                bestMove = allPossibleMoves[i];
-            }
-        }
-    }else{
-        //dapatkan langkah terbaik untuk ai
-        let maxScore = -999999999;
-        for (let i = 0; i < allPossibleMoves.length; i++) {
-            if(allPossibleMoves[i].score > maxScore){
-                maxScore = allPossibleMoves[i].score;
-                bestMove = allPossibleMoves[i];
-            }
-        }
+    // if(isFirstTurn){//dapatkan posisi terjelek untuk musuh di peletakan batu yang pertama 
+    //     let minScore = 999999999;
+    //     for (let i = 0; i < allPossibleMoves.length; i++) {
+    //         if(allPossibleMoves[i].score < minScore){
+    //             minScore = allPossibleMoves[i].score;
+    //             bestMove = allPossibleMoves[i];
+    //         }
+    //     }
+    // }else{
+    //     //dapatkan langkah terbaik untuk ai
+    //     let maxScore = -999999999;
+    //     for (let i = 0; i < allPossibleMoves.length; i++) {
+    //         if(allPossibleMoves[i].score > maxScore){
+    //             maxScore = allPossibleMoves[i].score;
+    //             bestMove = allPossibleMoves[i];
+    //         }
+    //     }
+    // }
+
+    let depth = 5; // Set the desired depth to look ahead
+    bestMove = minimax(board, player, depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
+    // return best move
+
+    let result = apply(board, player, bestMove, isFirstTurn);
+    console.log(result)
+
+    let final = {
+        boardState: result,
     }
 
-    //return best move
-    return bestMove;
+    return final;
 }
 
 function shuffleArray(arr) {
@@ -739,5 +749,47 @@ function backtrackingPlayer(board, posX, posY, helper, status, player) {
 }
 
 
+function minimax(board, player, depth, isMaximizingPlayer, alpha, beta, isFirstTurn, playerPieceLeft) {
+    if (depth === 0 ) {
+        return {score: getScoreFromSBE(board, player)};
+    }
+
+    let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
+    let bestMove;
+
+    if (isMaximizingPlayer) {
+        let maxEval = -Infinity;
+
+        for (let move of allPossibleMoves) {
+            let newBoard = apply(board, player, move, isFirstTurn);
+            let evaluation = minimax(newBoard, player, depth - 1, false, alpha, beta, false, playerPieceLeft).score;
+            if (evaluation > maxEval) {
+                maxEval = evaluation;
+                bestMove = move;
+            }
+            alpha = Math.max(alpha, evaluation);
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        return {score: maxEval, move: bestMove};
+    } else {
+        let minEval = +Infinity;
+
+        for (let move of allPossibleMoves) {
+            let newBoard = apply(board, player, move, isFirstTurn);
+            let evaluation = minimax(newBoard, player, depth - 1, true, alpha, beta, false, playerPieceLeft).score;
+            if (evaluation < minEval) {
+                minEval = evaluation;
+                bestMove = move;
+            }
+            beta = Math.min(beta, eval);
+            if (beta <= alpha) {
+                break;
+            }
+        }
+        return {score: minEval, move: bestMove};
+    }
+}
 
 export default {getNextMove};
