@@ -56,24 +56,15 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
     // }
 
     let depth = 3; // Set the desired depth to look ahead
-    if(isFirstTurn){
-        bestMove = minimax(board, player, depth, false, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
-    }
-    else{
-        bestMove = minimax(board, player, depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
-    }
+    bestMove = minimax(board, player, depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
     // return best move
+    console.log(bestMove)
 
     let result = apply(board, player, bestMove, isFirstTurn);
-
-    alert('AI Move Done')
+    console.log(result)
 
     let final = {
         boardState: result,
-        moveType: bestMove.moveType,
-        col: bestMove.col,
-        row: bestMove.row,
-        type: bestMove.type,
     }
 
     return final;
@@ -451,7 +442,7 @@ function getScoreFromSBE(board, player) {
     }
 
     //check block for enemy move
-    playerScore += blockEnemyRoad(board, player);
+    // playerScore += blockEnemyRoad(board, player);
 
     // Check for control of the center 
     if (isCenterControlled(board, player)) {
