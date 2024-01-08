@@ -64,6 +64,7 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
 
     let final = {
         boardState: result,
+        moveType: bestMove.moveType
     }
 
     return final;
@@ -561,17 +562,16 @@ function blockEnemyRoad(board, player){
                 const topStack = board[row][col].stack[board[row][col].stack.length-1];
                 if (topStack.type == "flatstone" && topStack.owner == otherPlayer) {
                     roadLength++;
-                    if (roadLength == board.length-1 && wallBlock) {
-                        // return true;
-                        score += 10;
-                    }
                 }else if(topStack.type == "wallstone" && topStack.owner == player){
                     wallBlock = true;
-                    if (roadLength == board.length-1 && wallBlock) {
-                        score += 10;
-                    }
                 } else {
                     roadLength = 0; // Reset the count
+                }
+
+                if (roadLength == board.length-1 && wallBlock) {
+                    score += 10;
+                }else if(roadLength == board.length-2 && wallBlock){
+                    score += 6;
                 }
 
             }
@@ -755,6 +755,7 @@ function minimax(board, player, otherPlayer, depth, isMaximizingPlayer, alpha, b
     }
 
     let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
+    shuffleArray(allPossibleMoves);
     let bestMove;
 
     if (isMaximizingPlayer && player == "enemy") {
