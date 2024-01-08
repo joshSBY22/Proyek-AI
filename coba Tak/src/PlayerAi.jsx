@@ -55,10 +55,9 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
     //     }
     // }
 
-    let depth = 3; // Set the desired depth to look ahead
+    let depth = 5; // Set the desired depth to look ahead
     bestMove = minimax(board, player, depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
     // return best move
-    console.log(bestMove)
 
     let result = apply(board, player, bestMove, isFirstTurn);
     console.log(result)
@@ -442,7 +441,7 @@ function getScoreFromSBE(board, player) {
     }
 
     //check block for enemy move
-    // playerScore += blockEnemyRoad(board, player);
+    playerScore += blockEnemyRoad(board, player);
 
     // Check for control of the center 
     if (isCenterControlled(board, player)) {
