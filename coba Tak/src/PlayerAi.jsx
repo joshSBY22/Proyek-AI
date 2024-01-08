@@ -55,8 +55,8 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
     //     }
     // }
 
-    let depth = 5; // Set the desired depth to look ahead
-    bestMove = minimax(board, player, depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
+    let depth = 3; // Set the desired depth to look ahead
+    bestMove = minimax(board, player, "player", depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
     // return best move
 
     let result = apply(board, player, bestMove, isFirstTurn);
@@ -749,7 +749,7 @@ function backtrackingPlayer(board, posX, posY, helper, status, player) {
 }
 
 
-function minimax(board, player, depth, isMaximizingPlayer, alpha, beta, isFirstTurn, playerPieceLeft) {
+function minimax(board, player, otherPlayer, depth, isMaximizingPlayer, alpha, beta, isFirstTurn, playerPieceLeft) {
     if (depth === 0 ) {
         return {score: getScoreFromSBE(board, player)};
     }
@@ -757,12 +757,12 @@ function minimax(board, player, depth, isMaximizingPlayer, alpha, beta, isFirstT
     let allPossibleMoves = getAllMoves(board, player, isFirstTurn, playerPieceLeft);
     let bestMove;
 
-    if (isMaximizingPlayer) {
+    if (isMaximizingPlayer && player == "enemy") {
         let maxEval = -Infinity;
-
+        console.log("max "+player)
         for (let move of allPossibleMoves) {
             let newBoard = apply(board, player, move, isFirstTurn);
-            let evaluation = minimax(newBoard, player, depth - 1, false, alpha, beta, false, playerPieceLeft).score;
+            let evaluation = minimax(newBoard, player,otherPlayer, depth - 1, false, alpha, beta, false, playerPieceLeft).score;
             if (evaluation > maxEval) {
                 maxEval = evaluation;
                 bestMove = move;
@@ -775,10 +775,10 @@ function minimax(board, player, depth, isMaximizingPlayer, alpha, beta, isFirstT
         return {score: maxEval, move: bestMove};
     } else {
         let minEval = +Infinity;
-
+        console.log("min " + otherPlayer)
         for (let move of allPossibleMoves) {
-            let newBoard = apply(board, player, move, isFirstTurn);
-            let evaluation = minimax(newBoard, player, depth - 1, true, alpha, beta, false, playerPieceLeft).score;
+            let newBoard = apply(board, otherPlayer, move, isFirstTurn);
+            let evaluation = minimax(newBoard, player, otherPlayer, depth - 1, true, alpha, beta, false, playerPieceLeft).score;
             if (evaluation < minEval) {
                 minEval = evaluation;
                 bestMove = move;
