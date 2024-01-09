@@ -64,7 +64,8 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
 
     let final = {
         boardState: result,
-        moveType: bestMove.moveType
+        moveType: bestMove.moveType,
+        type: bestMove.type
     }
 
     return final;
@@ -587,17 +588,17 @@ function blockEnemyRoad(board, player){
                 const topStack = board[row][col].stack[board[row][col].stack.length-1];
                 if (topStack.type == 'flatstone' && topStack.owner == otherPlayer) {
                     roadLength++;
-                    if (roadLength == board.length-1 && wallBlock) {
-                        // return true; // Vertical road completed
-                        score += 10;
-                    }
                 } else if(topStack.type == "wallstone" && topStack.owner == player){
                     wallBlock = true;
-                    if (roadLength == board.length-1 && wallBlock) {
-                        score += 10;
-                    }
                 } else {
                     roadLength = 0; // Reset the count if the road is broken
+                }
+
+                
+                if (roadLength == board.length-1 && wallBlock) {
+                    score += 10;//vertical road almost complete
+                }else if(roadLength == board.length-2 && wallBlock){
+                    score += 6; //vertical road need 2 more to complete
                 }
             }
 
