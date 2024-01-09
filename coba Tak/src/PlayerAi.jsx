@@ -561,7 +561,7 @@ function blockEnemyRoad(board, player){
         for (let col = 0; col < board.length; col++) {
             if(board[row][col].stack.length > 0){
                 const topStack = board[row][col].stack[board[row][col].stack.length-1];
-                if (topStack.type == "flatstone" && topStack.owner == otherPlayer) {
+                if ((topStack.type == "flatstone" || topStack.type == "capstone") && topStack.owner == otherPlayer) {
                     roadLength++;
                 }else if(topStack.type == "wallstone" && topStack.owner == player){
                     wallBlock = true;
@@ -586,7 +586,7 @@ function blockEnemyRoad(board, player){
         for (let row = 0; row < board.length; row++) {
             if(board[row][col].stack.length > 0){
                 const topStack = board[row][col].stack[board[row][col].stack.length-1];
-                if (topStack.type == 'flatstone' && topStack.owner == otherPlayer) {
+                if ((topStack.type == "flatstone" || topStack.type == "capstone") && topStack.owner == otherPlayer) {
                     roadLength++;
                 } else if(topStack.type == "wallstone" && topStack.owner == player){
                     wallBlock = true;
@@ -764,7 +764,7 @@ function minimax(board, player, otherPlayer, depth, isMaximizingPlayer, alpha, b
         console.log("max "+player)
         for (let move of allPossibleMoves) {
             let newBoard = apply(board, player, move, isFirstTurn);
-            let evaluation = minimax(newBoard, player,otherPlayer, depth - 1, false, alpha, beta, false, playerPieceLeft).score;
+            let evaluation = minimax(newBoard, player, otherPlayer, depth - 1, false, alpha, beta, false, playerPieceLeft).score;
             if (evaluation > maxEval) {
                 maxEval = evaluation;
                 bestMove = move;
