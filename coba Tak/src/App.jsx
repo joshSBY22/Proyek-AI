@@ -1064,11 +1064,11 @@ function App() {
   function checkWin() {
     if (playerWin == true) {
       alert('you win!');
-      window.location.href = "/"
+      
     }
     if (enemyWin == true) {
       alert("enemy win!")
-      window.location.href = "/"
+      
     }
   }
 

@@ -58,9 +58,9 @@ function getNextMove(board, player, playerPieceLeft, isFirstTurn){
     let depth = 3; // Set the desired depth to look ahead
     bestMove = minimax(board, player, "player", depth, true, -Infinity, +Infinity, isFirstTurn, playerPieceLeft).move;
     // return best move
-
+    console.log(bestMove)
     let result = apply(board, player, bestMove, isFirstTurn);
-    console.log(result)
+    
 
     let final = {
         boardState: result,
