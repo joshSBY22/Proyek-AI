@@ -1144,9 +1144,9 @@ function App() {
       <div className="container-fluid">
         <div className="row d-flex justify-content-between">
           <div className="col-md-3">
-            <input type="number" name="ukuran" id="ukuran" defaultValue={4} onChange={() => {
+            <input type="number" name="ukuran" id="ukuran" defaultValue={3} onChange={() => {
               setBoardSize(document.getElementById('ukuran').value);
-            }} min={4} max={8} />
+            }} min={3} max={8} />
             <button className='btn btn-primary ms-2' onClick={initBoard}>Generate Board</button>
           </div>
           <div className="col-md-2">
